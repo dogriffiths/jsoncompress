@@ -93,24 +93,37 @@ class BitString {
         return val;
     }
 
-    BitString allExceptLastByte() {
-        return null;
+    void removeLastByte() {
+        len = len - 8;
+        if (len < 0) {
+            len = 0;
+        }
     }
 
     long valueOf() {
-        long val = 0;
+        int val = 0;
+        for (int i = 0; i < len / 8; i++) {
+            val = val << 8;
+            val = val + bytes[i];
+        }
+        return val;
+        /*        long val = 0;
         for (int i = 0; i * 8 < len; i++) {
-            if (i * 8 == len - 1) {
+            if ((i + 1) * 8 == len - 1) {
                 int offset = len - (i * 8);
                 int shift = 8 - offset;
                 val = val << offset;
-                int x = bytes[i] >> shift;
-                val = val + x;
+                System.err.println("val shifted up by " + offset + " to make " + val);
+                int x = bytes[i];
+                val = (val + x) >> shift;
+                System.err.println("val totalled to " + val);
             } else {
                 val = val << 8;
+                System.err.println("val shifted up(2) by 8 to make " + val);
                 val = val + bytes[i];
+                System.err.println("val totalled(2) to " + val);
             }
         }
-        return val;
+        return val;*/
     }
 }
