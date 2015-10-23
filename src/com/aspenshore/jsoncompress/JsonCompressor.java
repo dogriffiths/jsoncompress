@@ -31,6 +31,35 @@ public class JsonCompressor {
     }
 
     public byte[] compress(byte[] sourceBytes) {
+        byte[] resultBytes = new byte[sourceBytes.length * 7 / 8];
+        int offset = 0;
+        for (int i = 0; i < resultBytes.length; i++) {
+            resultBytes[i] = 0;
+        }
+        for (int i = 0; i < sourceBytes.length; i++) {
+            byte importantBits = (byte)(0xff & sourceBytes[i]);
+            if ((offset / 8) * 8 == offset) {
+                // We're starting on a byte boundary
+                int byteNo = offset / 8;
+                resultBytes[byteNo] = (byte)(0xff & (importantBits << 1));
+            }
+            else if (((offset - 1) / 8) * 8 == offset - 1) {
+                // We're 1 position into a byte boundary
+                int byteNo = offset / 8;
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
+            } else {
+                // We're crossing a byte boundary
+                int byteNo = offset / 8;
+                int into = offset - ((offset / 8) * 8);
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 1))));
+                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (8 - into))));
+            }
+            offset = offset + 7;
+        }
+        return resultBytes;
+    }
+
+    public byte[] compress2(byte[] sourceBytes) {
         String input = "";
         for (byte sourceByte : sourceBytes) {
             input = toBinary(sourceByte).substring(1,8) + input;
