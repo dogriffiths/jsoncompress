@@ -1,3 +1,5 @@
+import java.math.BigInteger;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,9 +25,6 @@ class BitString {
     class BitString(byte b) {
     }
     
-    void append(BitString s) {
-    }
-
     int length() {
         return 0;
     }
@@ -44,11 +43,32 @@ class BitString {
 }
 
      */
+    
     @Test
     public void canCreateABitStringFromBytes() {
         byte[] b = new byte[]{0x01, 0x02};
         BitString bs = new BitString(b);
         Assert.assertEquals(16, bs.length());
         Assert.assertEquals(0x0102, bs.valueOf());
+    }
+
+    @Test
+    public void canGetLast7Bits() {
+        BitString b0 = new BitString(new byte[]{0x01, 0x02, -1});
+        Assert.assertEquals(0x7f, b0.last7Bits());
+        BitString b1 = new BitString(new byte[]{0x01, 0x02, -1}, 20);
+        Assert.assertEquals(0x2f, b1.last7Bits());
+        BitString b2 = new BitString(new byte[]{0x01, 0x02, -1}, 23);
+        Assert.assertEquals(0x7f, b2.last7Bits());
+        BitString b3 = new BitString(new byte[]{0x01, 0x02, -1}, 22);
+        Assert.assertEquals(0x3f, b3.last7Bits());
+        BitString b4 = new BitString(new byte[]{0x01, 0x02, -1}, 21);
+        Assert.assertEquals(0x5f, b4.last7Bits());
+        BitString b5 = new BitString(new byte[]{0x01, 0x02, -1}, 19);
+        Assert.assertEquals(0x17, b5.last7Bits());
+        BitString b6 = new BitString(new byte[]{0x01, 0x02, -1}, 18);
+        Assert.assertEquals(0xb, b6.last7Bits());
+        BitString b7 = new BitString(new byte[]{0x01, 0x02, -1}, 17);
+        Assert.assertEquals(0x5, b7.last7Bits());
     }
 }

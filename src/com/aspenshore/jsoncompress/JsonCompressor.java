@@ -66,29 +66,40 @@ class BitString {
     int len;
     
     BitString(byte[] b) {
-        bytes = b;
-        len = 8 * bytes.length;
+        this(b, 8 * b.length);
     }
     
-    void append(BitString s) {
+    BitString(byte[] b, int len) {
+        bytes = b;
+        this.len = len;
     }
-
+    
     int length() {
         return len;
     }
 
-    BitString last7Bits() {
-        return null;
+    int last7Bits() {
+        int valStartsAtIndex = (len / 8) - 1;
+        int val = 0;
+        if ((valStartsAtIndex + 1) * 8 < len) {
+            // 2 bytes
+            val = (bytes[valStartsAtIndex] << 8) + (0xff & bytes[valStartsAtIndex + 1]);
+        } else {
+            // only in last byte
+            val = bytes[valStartsAtIndex];
+        }
+        int shift = len - 8 * (len / 8);
+        val = (val >> (8 - shift)) & 0x7f;
+        return val;
     }
 
     BitString allExceptLastByte() {
         return null;
     }
 
-    int valueOf() {
-        int val = 0;
+    long valueOf() {
+        long val = 0;
         for (int i = 0; i * 8 < len; i++) {
-            System.err.println("i = " + i);
             if (i * 8 == len - 1) {
                 int offset = len - (i * 8);
                 int shift = 8 - offset;
