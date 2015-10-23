@@ -20,30 +20,6 @@ public class JsonCompressorTest {
         Assert.assertEquals(0xff, compress[6] & 0xff);
     }
 
-    /*
-class BitString {
-    class BitString(byte b) {
-    }
-    
-    int length() {
-        return 0;
-    }
-
-    BitString last7Bits() {
-        return null;
-    }
-
-    BitString allExceptLastByte() {
-        return null;
-    }
-
-    int valueOf() {
-        return 0;
-    }
-}
-
-     */
-    
     @Test
     public void canCreateABitStringFromBytes() {
         byte[] b = new byte[]{0x01, 0x02};
