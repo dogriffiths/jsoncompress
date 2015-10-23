@@ -102,46 +102,17 @@ class BitString {
 
     long valueOf() {
         int val = 0;
-        if ((len / 8) * 8 == len) {
-            for (int i = 0; i < len / 8; i++) {
+            int lastComplete = (len / 8);
+            for (int i = 0; i < lastComplete; i++) {
                 val = val << 8;
                 val = val + bytes[i];
             }
-        } else {
-            int last = (len / 8);
-            for (int i = 0; i < (len / 8); i++) {
-                val = val << 8;
-                val = val + bytes[i];
-            }
+        if (lastComplete * 8 != len) {
             int diff = len - ((len / 8) * 8);
-            System.err.println("diff = " + diff);
             val = val << diff;
-            System.err.println("val now = " + val);
-            System.err.println("last = " + last);
-            System.err.println("bytes.length = " + bytes.length);
-            System.err.println("bytes[last] = " + bytes[last]);
-            int extra = ((0xff & bytes[last]) >> (8 - diff));
-            System.err.println("extra = " + extra);
+            int extra = ((0xff & bytes[lastComplete]) >> (8 - diff));
             val = val + extra;
         }
         return val;
-        /*        long val = 0;
-        for (int i = 0; i * 8 < len; i++) {
-            if ((i + 1) * 8 == len - 1) {
-                int offset = len - (i * 8);
-                int shift = 8 - offset;
-                val = val << offset;
-                System.err.println("val shifted up by " + offset + " to make " + val);
-                int x = bytes[i];
-                val = (val + x) >> shift;
-                System.err.println("val totalled to " + val);
-            } else {
-                val = val << 8;
-                System.err.println("val shifted up(2) by 8 to make " + val);
-                val = val + bytes[i];
-                System.err.println("val totalled(2) to " + val);
-            }
-        }
-        return val;*/
     }
 }

@@ -54,6 +54,14 @@ class BitString {
         BitString bs2 = new BitString(b2, 18);
         Assert.assertEquals(18, bs2.length());
         Assert.assertEquals(0x40b, bs2.valueOf());
+        byte[] b3 = new byte[]{0x01, 0x02, -1};
+        BitString bs3 = new BitString(b3, 23);
+        Assert.assertEquals(23, bs3.length());
+        Assert.assertEquals(0x817f, bs3.valueOf());
+        byte[] b4 = new byte[]{0x01, 0x02, -1};
+        BitString bs4 = new BitString(b4, 17);
+        Assert.assertEquals(17, bs4.length());
+        Assert.assertEquals(0x205, bs4.valueOf());
     }
 
     @Test
