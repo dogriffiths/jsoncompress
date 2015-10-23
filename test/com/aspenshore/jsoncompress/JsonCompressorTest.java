@@ -89,8 +89,8 @@ class BitString {
         BitString b0 = new BitString(new byte[]{0x01, 0x02, -1});
         b0.removeLastByte();
         Assert.assertEquals(0x0102, b0.valueOf());
-        /*        BitString b1 = new BitString(new byte[]{0x01, 0x02, 0x03}, 23);
+        BitString b1 = new BitString(new byte[]{0x01, 0x02, 0x03}, 23);
         b1.removeLastByte();
-        Assert.assertEquals(0x81, b1.valueOf());*/
+        Assert.assertEquals(0x81, b1.valueOf());
     }
 }
