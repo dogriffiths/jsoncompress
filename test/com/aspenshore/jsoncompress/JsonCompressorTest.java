@@ -50,6 +50,10 @@ class BitString {
         BitString bs = new BitString(b);
         Assert.assertEquals(16, bs.length());
         Assert.assertEquals(0x0102, bs.valueOf());
+        byte[] b2 = new byte[]{0x01, 0x02, -1};
+        BitString bs2 = new BitString(b2, 18);
+        Assert.assertEquals(18, bs2.length());
+        Assert.assertEquals(0x40b, bs2.valueOf());
     }
 
     @Test

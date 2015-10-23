@@ -102,9 +102,27 @@ class BitString {
 
     long valueOf() {
         int val = 0;
-        for (int i = 0; i < len / 8; i++) {
-            val = val << 8;
-            val = val + bytes[i];
+        if ((len / 8) * 8 == len) {
+            for (int i = 0; i < len / 8; i++) {
+                val = val << 8;
+                val = val + bytes[i];
+            }
+        } else {
+            int last = (len / 8);
+            for (int i = 0; i < (len / 8); i++) {
+                val = val << 8;
+                val = val + bytes[i];
+            }
+            int diff = len - ((len / 8) * 8);
+            System.err.println("diff = " + diff);
+            val = val << diff;
+            System.err.println("val now = " + val);
+            System.err.println("last = " + last);
+            System.err.println("bytes.length = " + bytes.length);
+            System.err.println("bytes[last] = " + bytes[last]);
+            int extra = ((0xff & bytes[last]) >> (8 - diff));
+            System.err.println("extra = " + extra);
+            val = val + extra;
         }
         return val;
         /*        long val = 0;
