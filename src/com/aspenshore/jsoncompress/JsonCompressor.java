@@ -108,22 +108,20 @@ public class JsonCompressor {
             resultBytes[i] = 0;
         }
         for (int i = 0; i < sourceBytes.length; i++) {
+            int into = offset & 0x7;
             byte importantBits = (byte)(0xff & sourceBytes[i]);
-            if ((offset / 8) * 8 == offset) {
+            int byteNo = offset / 8;
+            if (into == 0) {
                 // We're starting on a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[byteNo] = (byte)(0xff & (importantBits << 1));
+                resultBytes[byteNo] = (byte)(importantBits << 1);
             }
-            else if (((offset - 1) / 8) * 8 == offset - 1) {
+            else if (into == 1) {
                 // We're 1 position into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
+                resultBytes[byteNo] |= importantBits;
             } else {
                 // We're crossing a byte boundary
-                int byteNo = offset / 8;
-                int into = offset - ((offset / 8) * 8);
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 1))));
-                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (9 - into))));
+                resultBytes[byteNo] |= importantBits >> (into - 1);
+                resultBytes[byteNo + 1] = (byte)((importantBits << (9 - into)));
             }
             offset = offset + 7;
         }
@@ -139,10 +137,10 @@ public class JsonCompressor {
             int source = 0xff & sourceBytes[byteNo];
             if (into == 0) {
                 // We're starting on a byte boundary
-                resultBytes[i] = (byte)(0xff & (source >> 2));
+                resultBytes[i] = (byte)(source >> 2);
             } else if (into == 2) {
                 // We're 2 positions into a byte boundary
-                resultBytes[i] = (byte)(0xff & (0x3f & source));
+                resultBytes[i] = (byte)(0x3f & source);
             } else {
                 // We're crossing a byte boundary
                 byte firstByte = (byte)(0x3f & (source << (into - 2)));
@@ -178,10 +176,10 @@ public class JsonCompressor {
                 resultBytes[byteNo] = (byte)(0xff & (source << 2));
             } else if (into == 2) {
                 // We're 2 positions into a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | source));
+                resultBytes[byteNo] |= source;
             } else {
                 // We're crossing a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (source >> (into - 2))));
+                resultBytes[byteNo] |= source >> (into - 2);
                 resultBytes[byteNo + 1] = (byte)(0xff & (source << (10 - into)));
             }
             offset += 6;
