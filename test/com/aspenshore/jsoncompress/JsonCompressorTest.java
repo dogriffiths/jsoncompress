@@ -25,6 +25,20 @@ public class JsonCompressorTest {
     }
 
     @Test
+    public void canCompress6EightBytes() {
+        byte[] bytes = new byte[]{0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f};
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] compress = jsonCompressor.compress6(bytes);
+        Assert.assertEquals(6, compress.length);
+        Assert.assertEquals(0xff, compress[0] & 0xff);
+        Assert.assertEquals(0xff, compress[1] & 0xff);
+        Assert.assertEquals(0xff, compress[2] & 0xff);
+        Assert.assertEquals(0xff, compress[3] & 0xff);
+        Assert.assertEquals(0xff, compress[4] & 0xff);
+        Assert.assertEquals(0xff, compress[5] & 0xff);
+    }
+
+    @Test
     public void canExpandBytes() {
         byte[] bytes = new byte[]{(byte)(0x81 & 0xff), 0};
         JsonCompressor jsonCompressor = new JsonCompressor();
@@ -191,7 +205,7 @@ public class JsonCompressorTest {
         return result;
     }
 
-    private static String toBinary(byte sourceByte) {
+    private static String toBinary(int sourceByte) {
         return String.format("%8s", Integer.toBinaryString(sourceByte & 0xFF)).replace(' ', '0');
     }    
 }

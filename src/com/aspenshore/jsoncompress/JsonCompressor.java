@@ -7,6 +7,57 @@ import org.json.JSONObject;
 
 public class JsonCompressor {
 
+    public byte[] compress6(byte[] sourceBytes) {
+        int resultLength = sourceBytes.length * 6 / 8;
+        if (resultLength * 8 < sourceBytes.length * 6) {
+            resultLength++;
+        }
+        byte[] resultBytes = new byte[resultLength];
+        int offset = 0;
+        for (int i = 0; i < resultBytes.length; i++) {
+            resultBytes[i] = 0;
+        }
+        for (int i = 0; i < sourceBytes.length; i++) {
+            System.err.println("i = " + i);
+            byte importantBits = (byte)(0xff & sourceBytes[i]);
+            if ((offset / 8) * 8 == offset) {
+                // We're starting on a byte boundary
+                System.err.println("We're starting on a byte boundary");
+                int byteNo = offset / 8;
+                System.err.println("resultBytes[" + byteNo + "] = " + toBinary(     (byte)(0xff & (importantBits << 2))       ));
+                resultBytes[byteNo] = (byte)(0xff & (importantBits << 2));
+            } else if (((offset - 1) / 8) * 8 == offset - 1) {
+                // We're 1 position into a byte boundary
+                System.err.println("We're 1 position into a byte boundary");
+                int byteNo = offset / 8;
+                System.err.println("resultBytes[" + byteNo + "] = " + toBinary(     (byte)(0xff & (resultBytes[byteNo] | importantBits))       ));
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
+            } else if (((offset - 2) / 8) * 8 == offset - 2) {
+                // We're 2 positions into a byte boundary
+                System.err.println("We're 2 positions into a byte boundary");
+                int byteNo = offset / 8;
+                System.err.println("resultBytes[" + byteNo + "] = " + toBinary(     (byte)(0xff & (resultBytes[byteNo] | importantBits))       ));
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
+            } else {
+                // We're crossing a byte boundary
+                System.err.println("We're crossing a byte boundary");
+                int byteNo = offset / 8;
+                int into = offset - ((offset / 8) * 8);
+                System.err.println("resultBytes[" + byteNo + "] = " + toBinary(     (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 2))))       ));
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 2))));
+                System.err.println("resultBytes[" + (byteNo + 1) + "] = " + toBinary(     (byte)(0xff & ((importantBits << (9 - into))))       ));
+                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (9 - into))));
+            }
+            offset = offset + 6;
+            System.err.println("");
+        }
+        return resultBytes;
+    }
+
+    private static String toBinary(int sourceByte) {
+        return String.format("%8s", Integer.toBinaryString(sourceByte & 0xFF)).replace(' ', '0');
+    }    
+
     public byte[] compressJson(String json) {
         int options = 0;
         String walkFormat = walkFormat(json);
