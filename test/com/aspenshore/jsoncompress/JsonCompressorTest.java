@@ -167,7 +167,9 @@ public class JsonCompressorTest {
 
     @Test
     public void canSquishJson() {
-        String s1 = "{\"Ntnt\":\"Daily\",\"Ntvl\":\"1\",\"Rcr\":\"6\",\"Title\":\"Paracetamol\",\"Test\":\"For example, 100 bytes on a tag is not even enough storage to record the contents of this sentence.\"}";
+        String s1 = "{\"Ntnt\":\"Daily\",\"Ntvl\":\"1\",\"Rcr\":\"6\","
+            + "\"Title\":\"Paracetamol\","
+            + "\"Test\":\"For example, 100 bytes on a tag is not even enough storage to record the contents of this sentence.\"}";
         String s = normalizeJson(s1);
         JsonCompressor jsonCompressor = new JsonCompressor();
         byte[] compress = jsonCompressor.compressJson(s);
