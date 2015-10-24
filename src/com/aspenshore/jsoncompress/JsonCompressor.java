@@ -198,6 +198,14 @@ public class JsonCompressor {
                 inString = !inString;
                 continue;
             }
+            if ((c == '>') && inString) {
+                sb.append(";>");
+                continue;
+            }
+            if ((c == ';') && inString) {
+                sb.append(";;");
+                continue;
+            }
             if ((c == ' ') && !inString) {
                 continue;
             }
@@ -258,7 +266,7 @@ public class JsonCompressor {
         } catch (JSONException e) {
             throw new RuntimeException("Can't parse walk", e);
         }
-        return jsonObject.toString();
+        return jsonObject.toString().replaceAll(";>", ">");
     }
 
     Object readWalk() throws JSONException {
@@ -317,8 +325,15 @@ public class JsonCompressor {
         StringBuilder sb = new StringBuilder();
         char c = aWalk.charAt(pos);
         int start = pos;
-        while ((c != '^') && (c != '>') && (c != '+') && (c != '*')) {
-            sb.append(c);
+        boolean escaped = false;
+        while (escaped || ((c != '^') && (c != '>') && (c != '+') && (c != '*'))) {
+            boolean atEscape = (c == escapeChar.charAt(0));
+            if (!escaped && atEscape) {
+                escaped = true;
+            } else {
+                escaped = false;
+                sb.append(c);
+            }
             if (pos == aWalk.length() - 1) {
                 pos++;
                 break;

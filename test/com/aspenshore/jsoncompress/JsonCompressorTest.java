@@ -117,6 +117,16 @@ public class JsonCompressorTest {
     }
 
     @Test
+    public void canWalkAndUnwalkJsonWithSymbols() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String json = "{\"a\":\"1>2 Hello;World\"}";
+        String walkFormat = jsonCompressor.walkFormat(json);
+        Assert.assertEquals("a>1;>2 Hello;;World", walkFormat);
+        String unwalkFormat = jsonCompressor.unwalkFormat(walkFormat);
+        Assert.assertEquals(json, unwalkFormat);
+    }
+
+    @Test
     public void canCompressTextAndBack() {
         String s = "abcdefghijklThis is a really long, long sentence that I am writing. Will it work? I can only really tell by running the test";
         JsonCompressor jsonCompressor = new JsonCompressor();
