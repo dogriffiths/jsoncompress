@@ -11,82 +11,6 @@ public class JsonCompressor {
     private static String escapeChar = ";";
     private final static int ESCAPED_UPPERCASE = 0x01;
 
-    public void incrementEach(byte[] bytes, int inc) {
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] += inc;
-        }
-    }
-
-    public byte[] expand6AndInc(byte[] sourceBytes) {
-        byte[] expanded = expand6(sourceBytes);
-        incrementEach(expanded, 32);
-        return expanded;
-    }
-
-    public byte[] compress6AndDec(byte[] sourceBytes) {
-        incrementEach(sourceBytes, -32);
-        return compress6(sourceBytes);
-    }
-
-    public byte[] expand6(byte[] sourceBytes) {
-        byte[] resultBytes = new byte[sourceBytes.length * 8 / 6];
-        int offset = 0;
-        for (int i = 0; i < resultBytes.length; i++) {
-            int byteNo = offset >> 3;
-            int into = offset & 0x7;
-            int source = 0xff & sourceBytes[byteNo];
-            if (into == 0) {
-                // We're starting on a byte boundary
-                resultBytes[i] = (byte)(0xff & (source >> 2));
-            } else if (into == 2) {
-                // We're 2 positions into a byte boundary
-                resultBytes[i] = (byte)(0xff & (0x3f & source));
-            } else {
-                // We're crossing a byte boundary
-                byte firstByte = (byte)(0x3f & (source << (into - 2)));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[byteNo + 1]) >> (10 - into)));
-                resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
-            }
-            offset += 6;
-        }
-        if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
-            byte[] trimmed = new byte[resultBytes.length - 1];
-            System.arraycopy(resultBytes, 0, trimmed, 0, trimmed.length);
-            resultBytes = trimmed;
-        }
-        return resultBytes;
-    }
-
-    public byte[] compress6(byte[] sourceBytes) {
-        int resultLength = sourceBytes.length * 6 / 8;
-        if (resultLength * 8 < sourceBytes.length * 6) {
-            resultLength++;
-        }
-        byte[] resultBytes = new byte[resultLength];
-        int offset = 0;
-        for (int i = 0; i < resultBytes.length; i++) {
-            resultBytes[i] = 0;
-        }
-        for (int i = 0; i < sourceBytes.length; i++) {
-            byte source = sourceBytes[i];
-            int into = offset - ((offset / 8) * 8);
-            int byteNo = offset >> 3;
-            if (into == 0) {
-                // We're starting on a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (source << 2));
-            } else if (into == 2) {
-                // We're 2 positions into a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | source));
-            } else {
-                // We're crossing a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (source >> (into - 2))));
-                resultBytes[byteNo + 1] = (byte)(0xff & (source << (10 - into)));
-            }
-            offset += 6;
-        }
-        return resultBytes;
-    }
-
     public byte[] compressJson(String json) {
         int options = 0;
         String walkFormat = walkFormat(json);
@@ -126,27 +50,42 @@ public class JsonCompressor {
         return unwalkFormat(expandedString);
     }
 
-    public byte[] expand(byte[] sourceBytes) {
+    void incrementEach(byte[] bytes, int inc) {
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] += inc;
+        }
+    }
+
+    byte[] expand6AndInc(byte[] sourceBytes) {
+        byte[] expanded = expand6(sourceBytes);
+        incrementEach(expanded, 32);
+        return expanded;
+    }
+
+    byte[] compress6AndDec(byte[] sourceBytes) {
+        incrementEach(sourceBytes, -32);
+        return compress6(sourceBytes);
+    }
+
+    byte[] expand(byte[] sourceBytes) {
         byte[] resultBytes = new byte[sourceBytes.length * 8 / 7];
         int offset = 0;
         for (int i = 0; i < resultBytes.length; i++) {
-            if ((offset / 8) * 8 == offset) {
+            int into = offset & 0x7;
+            int byteNo = offset >> 3;
+            int source = 0xff & sourceBytes[byteNo];
+            if (into == 0) {
                 // We're starting on a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[i] = (byte)(0xff & ((0xff & sourceBytes[byteNo]) >> 1));
+                resultBytes[i] = (byte)(source >> 1);
             }
-            else if (((offset - 1) / 8) * 8 == offset - 1) {
+            else if (into == 1) {
                 // We're 1 position into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[i] = (byte)(0xff & ((0x7f & sourceBytes[byteNo])));
+                resultBytes[i] = (byte)(0x7f & source);
             } else {
                 // We're crossing a byte boundary
-                int firstByteNo = offset / 8;
-                int secondByteNo = firstByteNo + 1;
-                int into = offset - ((offset / 8) * 8);
-                byte firstByte = (byte)(0x7f & ((0xff & sourceBytes[firstByteNo]) << (into - 1)));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (9 - into)));
-                resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
+                byte firstByte = (byte)(0x7f & (source << (into - 1)));
+                byte secondByte = (byte)((0xff & sourceBytes[byteNo + 1]) >> (9 - into));
+                resultBytes[i] = (byte)(firstByte | secondByte);
             }
             offset = offset + 7;
         }
@@ -158,7 +97,7 @@ public class JsonCompressor {
         return resultBytes;
     }
 
-    public byte[] compress(byte[] sourceBytes) {
+    byte[] compress(byte[] sourceBytes) {
         int resultLength = sourceBytes.length * 7 / 8;
         if (resultLength * 8 < sourceBytes.length * 7) {
             resultLength++;
@@ -190,8 +129,67 @@ public class JsonCompressor {
         }
         return resultBytes;
     }
+
+    byte[] expand6(byte[] sourceBytes) {
+        byte[] resultBytes = new byte[sourceBytes.length * 8 / 6];
+        int offset = 0;
+        for (int i = 0; i < resultBytes.length; i++) {
+            int byteNo = offset >> 3;
+            int into = offset & 0x7;
+            int source = 0xff & sourceBytes[byteNo];
+            if (into == 0) {
+                // We're starting on a byte boundary
+                resultBytes[i] = (byte)(0xff & (source >> 2));
+            } else if (into == 2) {
+                // We're 2 positions into a byte boundary
+                resultBytes[i] = (byte)(0xff & (0x3f & source));
+            } else {
+                // We're crossing a byte boundary
+                byte firstByte = (byte)(0x3f & (source << (into - 2)));
+                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[byteNo + 1]) >> (10 - into)));
+                resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
+            }
+            offset += 6;
+        }
+        if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
+            byte[] trimmed = new byte[resultBytes.length - 1];
+            System.arraycopy(resultBytes, 0, trimmed, 0, trimmed.length);
+            resultBytes = trimmed;
+        }
+        return resultBytes;
+    }
+
+    byte[] compress6(byte[] sourceBytes) {
+        int resultLength = sourceBytes.length * 6 / 8;
+        if (resultLength * 8 < sourceBytes.length * 6) {
+            resultLength++;
+        }
+        byte[] resultBytes = new byte[resultLength];
+        int offset = 0;
+        for (int i = 0; i < resultBytes.length; i++) {
+            resultBytes[i] = 0;
+        }
+        for (int i = 0; i < sourceBytes.length; i++) {
+            byte source = sourceBytes[i];
+            int into = offset - ((offset / 8) * 8);
+            int byteNo = offset >> 3;
+            if (into == 0) {
+                // We're starting on a byte boundary
+                resultBytes[byteNo] = (byte)(0xff & (source << 2));
+            } else if (into == 2) {
+                // We're 2 positions into a byte boundary
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | source));
+            } else {
+                // We're crossing a byte boundary
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (source >> (into - 2))));
+                resultBytes[byteNo + 1] = (byte)(0xff & (source << (10 - into)));
+            }
+            offset += 6;
+        }
+        return resultBytes;
+    }
     
-    public String walkFormat(String json) {
+    String walkFormat(String json) {
         String s = json.trim();
         StringBuilder sb = new StringBuilder();
         char[] chars = s.toCharArray();
@@ -250,7 +248,7 @@ public class JsonCompressor {
 
     String aWalk;
     int pos = 0;
-    public String unwalkFormat(String walk) {
+    String unwalkFormat(String walk) {
         aWalk = walk;
         if (!aWalk.startsWith("*")) {
             aWalk = "+" + aWalk + "^";
@@ -265,7 +263,7 @@ public class JsonCompressor {
         return jsonObject.toString();
     }
 
-    public Object readWalk() throws JSONException {
+    Object readWalk() throws JSONException {
         char c = aWalk.charAt(pos);
         if (c == '+') {
             pos++;
@@ -278,7 +276,7 @@ public class JsonCompressor {
         return readString();
     }
 
-    public JSONObject readMap() throws JSONException {
+    JSONObject readMap() throws JSONException {
         char c = aWalk.charAt(pos);
         JSONObject result = new JSONObject();
         while ((pos < aWalk.length()) && (c != '^')) {
@@ -300,7 +298,7 @@ public class JsonCompressor {
         return result;
     }
 
-    public JSONArray readArray() throws JSONException {
+    JSONArray readArray() throws JSONException {
         char c = aWalk.charAt(pos);
         JSONArray result = new JSONArray();
         while ((pos < aWalk.length()) && (c != '^')) {
@@ -317,7 +315,7 @@ public class JsonCompressor {
         return result;
     }
 
-    public String readString() {
+    String readString() {
         StringBuilder sb = new StringBuilder();
         char c = aWalk.charAt(pos);
         int start = pos;
