@@ -10,6 +10,22 @@ import org.junit.Test;
 public class JsonCompressorTest {
 
     @Test
+    public void canExpand6SixBytes() {
+        byte[] bytes = new byte[]{-1, -1, -1, -1, -1, -1};
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] expanded = jsonCompressor.expand6(bytes);
+        Assert.assertEquals(8, expanded.length);
+        Assert.assertEquals(0x3f, expanded[0] & 0xff);
+        Assert.assertEquals(0x3f, expanded[1] & 0xff);
+        Assert.assertEquals(0x3f, expanded[2] & 0xff);
+        Assert.assertEquals(0x3f, expanded[3] & 0xff);
+        Assert.assertEquals(0x3f, expanded[4] & 0xff);
+        Assert.assertEquals(0x3f, expanded[5] & 0xff);
+        Assert.assertEquals(0x3f, expanded[6] & 0xff);
+        Assert.assertEquals(0x3f, expanded[7] & 0xff);
+    }
+
+    @Test
     public void canCompressEightBytes() {
         byte[] bytes = new byte[]{0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f};
         JsonCompressor jsonCompressor = new JsonCompressor();
@@ -186,6 +202,9 @@ public class JsonCompressorTest {
             }
             if (sectionLength == 7) {
                 System.err.print("  ");
+            }
+            if (sectionLength == 6) {
+                System.err.print("   ");
             }
             int x = sectionLength;
             if (x > bits.length()) {
