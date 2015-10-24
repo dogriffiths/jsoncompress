@@ -47,7 +47,7 @@ public class JsonCompressor {
                 byte secondByte = (byte)(0xff & ((0xff & sourceBytes[byteNo + 1]) >> (10 - into)));
                 resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
             }
-            offset = offset + 6;
+            offset += 6;
         }
         if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
             byte[] trimmed = new byte[resultBytes.length - 1];
@@ -68,27 +68,21 @@ public class JsonCompressor {
             resultBytes[i] = 0;
         }
         for (int i = 0; i < sourceBytes.length; i++) {
-            byte importantBits = (byte)(0xff & sourceBytes[i]);
-            if ((offset / 8) * 8 == offset) {
+            byte source = sourceBytes[i];
+            int into = offset - ((offset / 8) * 8);
+            int byteNo = offset >> 3;
+            if (into == 0) {
                 // We're starting on a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[byteNo] = (byte)(0xff & (importantBits << 2));
-            } else if (((offset - 1) / 8) * 8 == offset - 1) {
-                // We're 1 position into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
-            } else if (((offset - 2) / 8) * 8 == offset - 2) {
+                resultBytes[byteNo] = (byte)(0xff & (source << 2));
+            } else if (into == 2) {
                 // We're 2 positions into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | importantBits));
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | source));
             } else {
                 // We're crossing a byte boundary
-                int byteNo = offset / 8;
-                int into = offset - ((offset / 8) * 8);
-                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 2))));
-                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (10 - into))));
+                resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (source >> (into - 2))));
+                resultBytes[byteNo + 1] = (byte)(0xff & (source << (10 - into)));
             }
-            offset = offset + 6;
+            offset += 6;
         }
         return resultBytes;
     }
