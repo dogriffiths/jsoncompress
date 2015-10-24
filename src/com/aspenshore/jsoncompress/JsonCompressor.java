@@ -87,7 +87,7 @@ public class JsonCompressor {
                 byte secondByte = (byte)((0xff & sourceBytes[byteNo + 1]) >> (9 - into));
                 resultBytes[i] = (byte)(firstByte | secondByte);
             }
-            offset = offset + 7;
+            offset += 7;
         }
         if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
             byte[] trimmed = new byte[resultBytes.length - 1];
