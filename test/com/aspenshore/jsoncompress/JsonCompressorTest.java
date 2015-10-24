@@ -166,6 +166,66 @@ public class JsonCompressorTest {
     }
 
     @Test
+    public void compressAndExpandWithLotsOfData() throws Exception {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        for (int run = 0; run < 200; run++) {
+            byte[] data = new byte[run];
+            for (int i = 0; i < data.length; i++) {
+                int val = (int)((Math.random() * 127));
+                data[i] = (byte)(0x7f & val);
+            }
+            // Make sure we don't end with a zero, because we trim those
+            if (data.length > 0) {
+                while (data[data.length - 1] == 0) {
+                    int val = (int)((Math.random() * 127));
+                    data[data.length - 1] = (byte)(0x7f & val);
+                }
+            }
+            byte[] compressed = jsonCompressor.compress(data);
+            byte[] expanded = jsonCompressor.expand(compressed);
+            for (int i = 0; i < data.length; i++) {
+                try {
+                    Assert.assertEquals("Failed at position " + i, data[i], expanded[i]);
+                } catch(Exception e) {
+                    System.err.println("Failed for:\n");
+                    dumpHex(data);
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @Test
+    public void compress6AndExpand6WithLotsOfData() throws Exception {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        for (int run = 0; run < 200; run++) {
+            byte[] data = new byte[run];
+            for (int i = 0; i < data.length; i++) {
+                int val = (int)((Math.random() * 64));
+                data[i] = (byte)(0x7f & val);
+            }
+            // Make sure we don't end with a zero, because we trim those
+            if (data.length > 0) {
+                while (data[data.length - 1] == 0) {
+                    int val = (int)((Math.random() * 64));
+                    data[data.length - 1] = (byte)(0x7f & val);
+                }
+            }
+            byte[] compressed = jsonCompressor.compress6(data);
+            byte[] expanded = jsonCompressor.expand6(compressed);
+            for (int i = 0; i < data.length; i++) {
+                try {
+                    Assert.assertEquals("Failed at position " + i, data[i], expanded[i]);
+                } catch(Exception e) {
+                    System.err.println("Failed for:\n");
+                    dumpHex(data);
+                    throw e;
+                }
+            }
+        }
+    }
+
+    @Test
     public void canSquishJson() {
         String s1 = "{\"Ntnt\":\"Daily\",\"Ntvl\":\"1\",\"Rcr\":\"6\","
             + "\"Title\":\"Paracetamol\","
@@ -232,6 +292,17 @@ public class JsonCompressorTest {
         System.err.println("");
     }
 
+    private static void dumpHex(byte[] array) {
+        System.err.print("new byte[]{");
+        for (int i = 0; i < array.length; i++) {
+            System.err.print(toHex(array[i]));
+            if (i < array.length - 1) {
+                System.err.print(", ");
+            }
+        }
+        System.err.println("}");
+    }
+
     private static void dump(byte[] array, int sectionLength) {
         System.err.println("");
         String bits = bits(array);
@@ -262,6 +333,10 @@ public class JsonCompressorTest {
         }
         return result;
     }
+
+    private static String toHex(int sourceByte) {
+        return String.format("0x%2s", Integer.toHexString(sourceByte & 0xFF)).replace(' ', '0');
+    }    
 
     private static String toBinary(int sourceByte) {
         return String.format("%8s", Integer.toBinaryString(sourceByte & 0xFF)).replace(' ', '0');
