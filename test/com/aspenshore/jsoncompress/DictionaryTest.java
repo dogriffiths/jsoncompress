@@ -11,7 +11,7 @@ public class DictionaryTest {
     public void canEncodeAKnownWord() {
         String s = "SIMPLY";
         String code = Dictionary.encode(s);
-        Assert.assertEquals(code, "<\"#");
+        Assert.assertEquals(code, "<!!");
         String backAgain = Dictionary.decode(code);
         Assert.assertEquals(s, backAgain);
     }
