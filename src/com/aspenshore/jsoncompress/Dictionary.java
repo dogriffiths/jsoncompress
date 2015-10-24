@@ -1,3 +1,5 @@
+package com.aspenshore.jsoncompress;
+
 import java.util.*;
 import java.util.regex.*;
 

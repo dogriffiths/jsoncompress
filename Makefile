@@ -25,7 +25,7 @@ JTC=javac -sourcepath $(TEST) -classpath $(TCP) -d $(TESTBUILD) $(filter %.java,
 .SUFFIXES : .java .class
 .PHONY : clean all test
 
-all: $(CLASSFILES) $(TESTCLASSFILES)
+all: $(CLASSFILES) $(TESTCLASSFILES) $(BUILD)/jsoncompressor.jar test
 
 $(BUILD):
 	mkdir $@
@@ -47,3 +47,6 @@ classes: $(CLASSFILES)
 test: $(CLASSFILES) $(TESTCLASSFILES)
 	java -classpath $(TCP) org.junit.runner.JUnitCore \
 		$(patsubst $(TESTBUILD).%.class,%, $(shell find $(TESTBUILD) -name '*Test.class' | sed 's/\//./g' ))
+
+$(BUILD)/jsoncompressor.jar: $(BUILD) $(CLASSFILES)
+	cd $(BUILD) && jar -cvf jsoncompressor.jar com/aspenshore/jsoncompress/*.class
