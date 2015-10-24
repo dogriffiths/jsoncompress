@@ -206,6 +206,10 @@ public class JsonCompressor {
                 sb.append(";+");
                 continue;
             }
+            if ((c == '^') && inString) {
+                sb.append(";^");
+                continue;
+            }
             if ((c == ';') && inString) {
                 sb.append(";;");
                 continue;
