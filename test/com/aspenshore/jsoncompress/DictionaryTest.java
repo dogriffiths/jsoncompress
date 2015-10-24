@@ -7,10 +7,9 @@ import org.junit.Test;
 public class DictionaryTest {
     @Test
     public void canEncodeAKnownWord() {
-        //        String s = "FOOD";
-        String s = "INSTRUCTIONS";
+        String s = "SIMPLY";
         String code = Dictionary.encode(s);
-        System.err.println("code = " + code);
+        Assert.assertEquals(code, "<\"#");
         String backAgain = Dictionary.decode(code);
         Assert.assertEquals(s, backAgain);
     }

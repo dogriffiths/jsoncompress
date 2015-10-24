@@ -4,7 +4,7 @@ import java.util.regex.*;
 class Dictionary {
     //!\"#$%&[]
     private static Pattern wordsPattern = Pattern.compile("[A-Z][A-Z][A-Z][A-Z]*");
-    private static Pattern longCodesPattern = Pattern.compile("<[N-Z0-9!\\\\\"#$%\\[\\]][A-Z0-9!\\\\\"#$%\\[\\]]");
+    private static Pattern longCodesPattern = Pattern.compile("<[N-Z0-9!\\\\\"#$%\\[\\]&][A-Z0-9!\\\\\"#$%\\[\\]&]");
     private static Pattern shortCodesPattern = Pattern.compile("<[A-M]");
     
     private static Comparator<String> byLength = new Comparator<String>() {

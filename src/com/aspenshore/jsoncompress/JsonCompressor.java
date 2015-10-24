@@ -104,7 +104,6 @@ public class JsonCompressor {
         String tickedString = walkFormat.replaceAll("([A-Z])", escapeChar + "$1");
         String upperTickedString = tickedString.toUpperCase();
         upperTickedString = Dictionary.shorten(upperTickedString);
-        System.err.println("Shortened to '" + upperTickedString + "'");
         byte[] compressEscapedCase = compress6AndDec(upperTickedString.getBytes());
         byte[] compressUnescapedCase = compress(walkFormat.getBytes());
         if (compressEscapedCase.length < compressUnescapedCase.length) {

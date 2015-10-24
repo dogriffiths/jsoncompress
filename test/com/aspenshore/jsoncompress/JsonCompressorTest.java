@@ -165,14 +165,14 @@ public class JsonCompressorTest {
 
     @Test
     public void canSquishJson() {
-                String s1 = "{\"menu\":{\"header\":\"SVG Viewer\",\"items\":[{\"id\":\"Open\"},{\"id\":\"OpenNew\",\"label\":\"Open New\"},{\"id\":\"ZoomIn\",\"label\":\"Zoom In\"},{\"id\":\"ZoomOut\",\"label\":\"Zoom Out\"},{\"id\":\"OriginalView\",\"label\":\"Original View\"},{\"id\":\"Quality\"},{\"id\":\"Pause\"},{\"id\":\"Mute\"},{\"id\":\"Find\",\"label\":\"Find...\"},{\"id\":\"FindAgain\",\"label\":\"Find Again\"},{\"id\":\"Copy\"},{\"id\":\"CopyAgain\",\"label\":\"Copy Again\"},{\"id\":\"CopySVG\",\"label\":\"Copy SVG\"},{\"id\":\"ViewSVG\",\"label\":\"View SVG\"},{\"id\":\"ViewSource\",\"label\":\"View Source\"},{\"id\":\"SaveAs\",\"label\":\"Save As\"},{\"id\":\"Help\"},{\"id\":\"About\",\"label\":\"About Adobe CVG Viewer...\"}]}}";
-        //        String s1 = "{\"Ntnt\":\"Daily\",\"Ntvl\":\"1\",\"Rcr\":\"6\",\"Title\":\"Paracetamol\",\"Instructions\":\"Take with food\"}";
+        //        String s1 = "{\"menu\":{\"header\":\"SVG Viewer\",\"items\":[{\"id\":\"Open\"},{\"id\":\"OpenNew\",\"label\":\"Open New\"},{\"id\":\"ZoomIn\",\"label\":\"Zoom In\"},{\"id\":\"ZoomOut\",\"label\":\"Zoom Out\"},{\"id\":\"OriginalView\",\"label\":\"Original View\"},{\"id\":\"Quality\"},{\"id\":\"Pause\"},{\"id\":\"Mute\"},{\"id\":\"Find\",\"label\":\"Find...\"},{\"id\":\"FindAgain\",\"label\":\"Find Again\"},{\"id\":\"Copy\"},{\"id\":\"CopyAgain\",\"label\":\"Copy Again\"},{\"id\":\"CopySVG\",\"label\":\"Copy SVG\"},{\"id\":\"ViewSVG\",\"label\":\"View SVG\"},{\"id\":\"ViewSource\",\"label\":\"View Source\"},{\"id\":\"SaveAs\",\"label\":\"Save As\"},{\"id\":\"Help\"},{\"id\":\"About\",\"label\":\"About Adobe CVG Viewer...\"}]}}";
+        String s1 = "{\"Ntnt\":\"Daily\",\"Ntvl\":\"1\",\"Rcr\":\"6\",\"Title\":\"Paracetamol\",\"Test\":\"For example, 100 bytes on a tag is not even enough storage to record the contents of this sentence.\"}";
         String s = normalizeJson(s1);
         JsonCompressor jsonCompressor = new JsonCompressor();
         byte[] compress = jsonCompressor.compressJson(s);
-        System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
+        //System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
         String result = jsonCompressor.expandJson(compress);
-        Assert.assertEquals(s, result);
+        Assert.assertEquals(s, normalizeJson(result));
     }
 
     @Test
