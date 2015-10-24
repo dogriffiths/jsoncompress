@@ -210,6 +210,14 @@ public class JsonCompressor {
                 sb.append(";^");
                 continue;
             }
+            if ((c == '*') && inString) {
+                sb.append(";*");
+                continue;
+            }
+            if ((c == '<') && inString) {
+                sb.append(";<");
+                continue;
+            }
             if ((c == ';') && inString) {
                 sb.append(";;");
                 continue;
@@ -270,7 +278,6 @@ public class JsonCompressor {
         } catch (JSONException e) {
             throw new RuntimeException("Can't parse walk", e);
         }
-        System.err.println("jsonObject: " + jsonObject);
         return jsonObject.toString();
     }
 

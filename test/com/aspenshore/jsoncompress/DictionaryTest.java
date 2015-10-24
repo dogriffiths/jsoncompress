@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.regex.*;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class DictionaryTest {
@@ -14,6 +15,21 @@ public class DictionaryTest {
         Assert.assertEquals(code, "<!!");
         String backAgain = Dictionary.decode(code);
         Assert.assertEquals(s, backAgain);
+    }
+
+    @Test
+    @Ignore("Currently replaces stuff even if the < is escaped")
+    public void dontReplaceEscapeLessThan() {
+        String s = ";<SYMBOL";
+        String lengthen = Dictionary.lengthen(s);
+        Assert.assertEquals(s, lengthen);
+    }
+
+    @Test
+    public void doReplaceEscapeLessThanIfNotReallyEscaped() {
+        String s = ";;<SYMBOL";
+        String lengthen = Dictionary.lengthen(s);
+        Assert.assertEquals(";;RATEMBOL", lengthen);
     }
 
     @Test

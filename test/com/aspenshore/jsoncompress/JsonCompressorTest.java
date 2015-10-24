@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class JsonCompressorTest {
@@ -119,13 +120,28 @@ public class JsonCompressorTest {
     @Test
     public void canWalkAndUnwalkJsonWithSymbols() {
         JsonCompressor jsonCompressor = new JsonCompressor();
-        String json = "{\"c\":[\"d>>1\",\"e^\",\"f\"],\"a\":\"1>2 Hello;+World;Test+Here\"}";
+        String json = "{\"c\":[\"d>>1\",\"e^\",\"f\"],\"a\":\"1>2 Hello;+World;Test+Here*With*+A*Set+Of\"}";
         String walkFormat = jsonCompressor.walkFormat(json);
-        System.err.println("walkFormat: " + walkFormat);
-        Assert.assertEquals("c>*d;>;>1>e;^>f^>a>1;>2 Hello;;;+World;;Test;+Here", walkFormat);
+        Assert.assertEquals("c>*d;>;>1>e;^>f^>a>1;>2 Hello;;;+World;;Test;+Here;*With;*;+A;*Set;+Of", walkFormat);
         String unwalkFormat = jsonCompressor.unwalkFormat(walkFormat);
-        System.err.println("unwalkFormat: " + unwalkFormat);
         Assert.assertEquals(json, unwalkFormat);
+        byte[] compressed = jsonCompressor.compressJson(json);
+        String expanded = jsonCompressor.expandJson(compressed);
+        Assert.assertEquals(json, expanded);
+    }
+
+    @Test
+    @Ignore("Still gets confused if text looks like a word replacement, e.g. <sy")
+    public void canWalkAndUnwalkJsonWithSymbolsWithWordExpansionGettingConfused() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String json = "{\"c\":[\"d>>1\",\"e^\",\"f\"],\"a\":\"1>2 Hello;+World;Test+Here*With*+A*Set+Of <sym<BOls\"}";
+        String walkFormat = jsonCompressor.walkFormat(json);
+        Assert.assertEquals("c>*d;>;>1>e;^>f^>a>1;>2 Hello;;;+World;;Test;+Here;*With;*;+A;*Set;+Of ;<sym;<BOls", walkFormat);
+        String unwalkFormat = jsonCompressor.unwalkFormat(walkFormat);
+        Assert.assertEquals(json, unwalkFormat);
+        byte[] compressed = jsonCompressor.compressJson(json);
+        String expanded = jsonCompressor.expandJson(compressed);
+        Assert.assertEquals(json, expanded);
     }
 
     // @Test
