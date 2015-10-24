@@ -158,7 +158,7 @@ public class JsonCompressorTest {
         String s = normalizeJson("{\"Rcr\":\"6\",\"Times\":[\"08:00\",\"12:00\",\"16:00\"],\"Ntnt\":\"Daily\",\"Ntvl\":\"3\",\"Title\":\"Gemtuzumab ozogamicin\",\"Info\":\"Take with food\"}");
         JsonCompressor jsonCompressor = new JsonCompressor();
         byte[] compress = jsonCompressor.compressJson(s);
-        //System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
+        System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
         String result = jsonCompressor.expandJson(compress);
         Assert.assertEquals(s, result);
     }
