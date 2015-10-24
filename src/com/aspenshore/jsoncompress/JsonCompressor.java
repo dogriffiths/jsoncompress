@@ -32,25 +32,19 @@ public class JsonCompressor {
         byte[] resultBytes = new byte[sourceBytes.length * 8 / 6];
         int offset = 0;
         for (int i = 0; i < resultBytes.length; i++) {
-            if ((offset / 8) * 8 == offset) {
+            int byteNo = offset >> 3;
+            int into = offset & 0x7;
+            int source = 0xff & sourceBytes[byteNo];
+            if (into == 0) {
                 // We're starting on a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[i] = (byte)(0xff & ((0xff & sourceBytes[byteNo]) >> 2));
-            } else if (((offset - 1) / 8) * 8 == offset - 1) {
-                // We're 1 position into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[i] = (byte)(0xff & ((0x3f & sourceBytes[byteNo])));
-            } else if (((offset - 2) / 8) * 8 == offset - 2) {
+                resultBytes[i] = (byte)(0xff & (source >> 2));
+            } else if (into == 2) {
                 // We're 2 positions into a byte boundary
-                int byteNo = offset / 8;
-                resultBytes[i] = (byte)(0xff & ((0x3f & sourceBytes[byteNo])));
+                resultBytes[i] = (byte)(0xff & (0x3f & source));
             } else {
                 // We're crossing a byte boundary
-                int firstByteNo = offset / 8;
-                int secondByteNo = firstByteNo + 1;
-                int into = offset - ((offset / 8) * 8);
-                byte firstByte = (byte)(0x3f & ((0xff & sourceBytes[firstByteNo]) << (into - 2)));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (10 - into)));
+                byte firstByte = (byte)(0x3f & (source << (into - 2)));
+                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[byteNo + 1]) >> (10 - into)));
                 resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
             }
             offset = offset + 6;
