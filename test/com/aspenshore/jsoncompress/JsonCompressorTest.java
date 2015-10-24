@@ -71,6 +71,92 @@ public class JsonCompressorTest {
         Assert.assertEquals(s, new String(expanded));
     }
 
+    @Test
+    public void canEncodeAnArray() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        assertWalkValid(jsonCompressor, "[\"a\",\"b\"]", "*a>b", "[\"a\",\"b\"]");
+        assertWalkValid(jsonCompressor, "[\"a\",\"b\",\"c\"]", "*a>b>c", "[\"a\",\"b\",\"c\"]");
+        assertWalkValid(jsonCompressor, "[\"a\"]", "*a", "[\"a\"]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"]]", "*a*b", "[\"a\",[\"b\"]]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"],\"c\"]", "*a*b^c", "[\"a\",[\"b\"],\"c\"]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\",\"c\"]]", "*a*b>c", "[\"a\",[\"b\",\"c\"]]");
+    }
+
+    @Test
+    public void bugDontPutZeroesAtTheEnd() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String walkFormat = "Rcr>6>Times*08:00>12:00>16:00^Ntnt>Daily>Ntvl>3>Title>Gemtuzumab ozogamicin>Info>Take with food";
+        byte[] compress = jsonCompressor.compress(walkFormat.getBytes());
+        byte[] expand = jsonCompressor.expand(compress);
+        Assert.assertEquals(walkFormat, new String(expand));
+    }
+
+    @Test
+    public void canCompressAndExpandAString() {
+        String s = "ABCDEFGHI";
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] compress = jsonCompressor.compress(s.getBytes());
+        byte[] expand = jsonCompressor.expand(compress);
+        String result = new String(expand);
+        Assert.assertEquals(s, result);
+    }
+
+    @Test
+    public void canSquishJson() {
+        String s = normalizeJson("{\"Rcr\":\"6\",\"Times\":[\"08:00\",\"12:00\",\"16:00\"],\"Ntnt\":\"Daily\",\"Ntvl\":\"3\",\"Title\":\"Gemtuzumab ozogamicin\",\"Info\":\"Take with food\"}");
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] compress = jsonCompressor.compressJson(s);
+        //System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
+        String result = jsonCompressor.expandJson(compress);
+        Assert.assertEquals(s, result);
+    }
+
+    @Test
+    public void canHaveAnArrayOfMaps() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        assertWalkValid(jsonCompressor, "[{\"a\":\"b\"}]", "*+a>b", "[{\"a\":\"b\"}]");
+    }
+
+    @Test
+    public void canEncodeASimpleObject() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\"}", "a>1", "{\"a\":\"1\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"b\":\"2\"}", "a>1>b>2", "{\"a\":\"1\",\"b\":\"2\"}");
+    }
+
+    @Test
+    public void canEncodeAComplexObject() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"}}", "a>1>a1+b>2", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"},\"c\":\"3\"}", "a>1>a1+b>2^c>3", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\",\"c\":\"3\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}", "a>1>a1+b>2>b1+c>3", "{\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a\":\"1\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a1\":{\"d\":\"4\"}}", "a>1>a0+b>2>b1+c>3^^a1+d>4", "{\"a1\":{\"d\":\"4\"},\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}");
+    }
+
+
+    //
+    // UTILITIES
+    //
+    
+    private String normalizeJson(String s) {
+        return (new JSONObject(s)).toString();
+    }
+    
+    private void assertWalkValid(JsonCompressor jsonCompressor, String json, String expectedWalk, String expectedJson) {
+        String actualWalk = jsonCompressor.walkFormat(json);
+        Assert.assertEquals(expectedWalk, actualWalk);
+        String actualJson = jsonCompressor.unwalkFormat(actualWalk);
+        if (actualJson.startsWith("[")) {
+            JSONArray actual = new JSONArray(actualJson);
+            JSONArray expected = new JSONArray(expectedJson);
+            Assert.assertEquals(expected.toString(), actual.toString());
+        } else {
+            JSONObject actual = new JSONObject(actualJson);
+            JSONObject expected = new JSONObject(expectedJson);
+            Assert.assertEquals(expected.toString(), actual.toString());
+        }
+    }
+
     private static void dump(byte[] array) {
         for (int i = 0; i < array.length; i++) {
             System.err.print(toBinary(array[i]) + " ");
@@ -103,22 +189,6 @@ public class JsonCompressorTest {
             result += toBinary(array[i]);
         }
         return result;
-    }
-
-    @Test
-    public void canEncodeASimpleObject() {
-        JsonCompressor jsonCompressor = new JsonCompressor();
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\"}", "a>1", "{\"a\":\"1\"}");
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"b\":\"2\"}", "a>1>b>2", "{\"a\":\"1\",\"b\":\"2\"}");
-    }
-    
-    private void assertWalkValid(JsonCompressor jsonCompressor, String json, String expectedWalk, String expectedJson) {
-        String actualWalk = jsonCompressor.walkFormat(json);
-        Assert.assertEquals(expectedWalk, actualWalk);
-        String actualJson = jsonCompressor.unwalkFormat(actualWalk);
-        JSONObject actual = new JSONObject(actualJson);
-        JSONObject expected = new JSONObject(expectedJson);
-        Assert.assertEquals(expected.toString(), actual.toString());
     }
 
     private static String toBinary(byte sourceByte) {
