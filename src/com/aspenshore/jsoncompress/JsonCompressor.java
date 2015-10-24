@@ -102,7 +102,9 @@ public class JsonCompressor {
         String walkFormat = walkFormat(json);
         byte[] compress;
         String tickedString = walkFormat.replaceAll("([A-Z])", escapeChar + "$1");
-        byte[] compressEscapedCase = compress6AndDec(tickedString.toUpperCase().getBytes());
+        String upperTickedString = tickedString.toUpperCase();
+        upperTickedString = Dictionary.shorten(upperTickedString);
+        byte[] compressEscapedCase = compress6AndDec(upperTickedString.getBytes());
         byte[] compressUnescapedCase = compress(walkFormat.getBytes());
         if (compressEscapedCase.length < compressUnescapedCase.length) {
             compress = compressEscapedCase;
@@ -123,6 +125,7 @@ public class JsonCompressor {
         String expandedString;
         if ((options & ESCAPED_UPPERCASE) != 0) {
             expandedString = new String(expand6AndInc(bytes));
+            expandedString = Dictionary.lengthen(expandedString);
             expandedString = expandedString.toLowerCase();
             for (char a : "abcdefghijklmnopqrstuvwxyz".toCharArray()) {
                 expandedString = expandedString.replaceAll(escapeChar + a, ("" + a).toUpperCase());
@@ -248,10 +251,10 @@ public class JsonCompressor {
         while (s1.endsWith("^")) {
             s1 = s1.substring(0, s1.length() - 1);
         }
-        s1=s1.replaceAll("\\>\\+", "+");
-        s1=s1.replaceAll("\\>\\*", "*");
-        s1=s1.replaceAll("\\^\\>", "^");
-        s1=s1.replaceAll("\\^\\+", "^");
+        //        s1=s1.replaceAll("\\>\\+", "+");
+        //s1=s1.replaceAll("\\>\\*", "*");
+        //s1=s1.replaceAll("\\^\\>", "^");
+        //s1=s1.replaceAll("\\^\\+", "^");
         return s1;
     }
 

@@ -129,9 +129,9 @@ public class JsonCompressorTest {
         assertWalkValid(jsonCompressor, "[\"a\",\"b\"]", "*a>b", "[\"a\",\"b\"]");
         assertWalkValid(jsonCompressor, "[\"a\",\"b\",\"c\"]", "*a>b>c", "[\"a\",\"b\",\"c\"]");
         assertWalkValid(jsonCompressor, "[\"a\"]", "*a", "[\"a\"]");
-        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"]]", "*a*b", "[\"a\",[\"b\"]]");
-        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"],\"c\"]", "*a*b^c", "[\"a\",[\"b\"],\"c\"]");
-        assertWalkValid(jsonCompressor, "[\"a\",[\"b\",\"c\"]]", "*a*b>c", "[\"a\",[\"b\",\"c\"]]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"]]", "*a>*b", "[\"a\",[\"b\"]]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\"],\"c\"]", "*a>*b^>c", "[\"a\",[\"b\"],\"c\"]");
+        assertWalkValid(jsonCompressor, "[\"a\",[\"b\",\"c\"]]", "*a>*b>c", "[\"a\",[\"b\",\"c\"]]");
     }
 
     @Test
@@ -153,9 +153,19 @@ public class JsonCompressorTest {
         Assert.assertEquals(s, result);
     }
 
+    //@Test
+    public void canWalkAnArrayOfObjects() {
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String s = normalizeJson("{\"a\":[{\"e\":\"f\"},{\"g\":\"g\"}]}");
+        System.err.println("s = " + s);
+        String walked = jsonCompressor.walkFormat(s);
+        System.err.println("walked = " + walked);
+        Assert.assertEquals("a*+e>f^+g>g", walked);
+    }
+
     @Test
     public void canSquishJson() {
-        String s = normalizeJson("{\"Rcr\":\"6\",\"Times\":[\"08:00\",\"12:00\",\"16:00\"],\"Ntnt\":\"Daily\",\"Ntvl\":\"3\",\"Title\":\"Gemtuzumab ozogamicin\",\"Info\":\"Take with food\"}");
+        String s = normalizeJson("{\"menu\":{\"header\":\"SVG Viewer\",\"items\":[{\"id\":\"Open\"},{\"id\":\"OpenNew\",\"label\":\"Open New\"},{\"id\":\"ZoomIn\",\"label\":\"Zoom In\"},{\"id\":\"ZoomOut\",\"label\":\"Zoom Out\"},{\"id\":\"OriginalView\",\"label\":\"Original View\"},{\"id\":\"Quality\"},{\"id\":\"Pause\"},{\"id\":\"Mute\"},{\"id\":\"Find\",\"label\":\"Find...\"},{\"id\":\"FindAgain\",\"label\":\"Find Again\"},{\"id\":\"Copy\"},{\"id\":\"CopyAgain\",\"label\":\"Copy Again\"},{\"id\":\"CopySVG\",\"label\":\"Copy SVG\"},{\"id\":\"ViewSVG\",\"label\":\"View SVG\"},{\"id\":\"ViewSource\",\"label\":\"View Source\"},{\"id\":\"SaveAs\",\"label\":\"Save As\"},{\"id\":\"Help\"},{\"id\":\"About\",\"label\":\"About Adobe CVG Viewer...\"}]}}");
         JsonCompressor jsonCompressor = new JsonCompressor();
         byte[] compress = jsonCompressor.compressJson(s);
         System.err.println("JSON compressed from " + s.length() + " bytes to " + compress.length + " bytes");
@@ -179,10 +189,10 @@ public class JsonCompressorTest {
     @Test
     public void canEncodeAComplexObject() {
         JsonCompressor jsonCompressor = new JsonCompressor();
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"}}", "a>1>a1+b>2", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\"}");
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"},\"c\":\"3\"}", "a>1>a1+b>2^c>3", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\",\"c\":\"3\"}");
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}", "a>1>a1+b>2>b1+c>3", "{\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a\":\"1\"}");
-        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a1\":{\"d\":\"4\"}}", "a>1>a0+b>2>b1+c>3^^a1+d>4", "{\"a1\":{\"d\":\"4\"},\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"}}", "a>1>a1>+b>2", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\"},\"c\":\"3\"}", "a>1>a1>+b>2^>c>3", "{\"a1\":{\"b\":\"2\"},\"a\":\"1\",\"c\":\"3\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}", "a>1>a1>+b>2>b1>+c>3", "{\"a1\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a\":\"1\"}");
+        assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a1\":{\"d\":\"4\"}}", "a>1>a0>+b>2>b1>+c>3^^>a1>+d>4", "{\"a1\":{\"d\":\"4\"},\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}");
     }
 
 

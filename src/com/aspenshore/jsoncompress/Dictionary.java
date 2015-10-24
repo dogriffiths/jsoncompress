@@ -1,7 +1,19 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.*;
 
 class Dictionary {
+    private static Pattern wordsPattern = Pattern.compile("[A-Z][A-Z][A-Z][A-Z]*");
+    private static Pattern longCodesPattern = Pattern.compile("<[N-Z0-9][A-Z0-9]");
+    private static Pattern shortCodesPattern = Pattern.compile("<[A-M]");
+    
+    private static Comparator<String> byLength = new Comparator<String>() {
+                @Override
+                public int compare(String a, String b) {
+                    return b.length() - a.length();
+                }
+            };
+
+
     private static String[] wordsAndCodes = {
         "A", "THE", "B", "AND", "C", "FOR", "D", "YOU", "E", "NOT",
         "F", "ARE", "G", "ALL", "H", "NEW", "I", "WAS", "J", "CAN",
@@ -200,5 +212,40 @@ class Dictionary {
             return codesToWords.get(code);
         }
         return code1;
+    }
+
+    public static String lengthen(String result2) {
+        List<String> shortCodesInString = wordsForPattern(shortCodesPattern, result2);
+        for (String w : shortCodesInString) {
+            String theWord = Dictionary.decode(w);
+            result2 = result2.replaceAll(w, theWord);
+        }
+        List<String> longCodesInString = wordsForPattern(longCodesPattern, result2);
+        for (String w : longCodesInString) {
+            String theWord = Dictionary.decode(w);
+            result2 = result2.replaceAll(w, theWord);
+        }
+        return result2;
+    }
+
+    public static String shorten(String str) {
+        List<String> words = wordsForPattern(wordsPattern, str);
+        String result = str;
+        for (String w : words) {
+            String code = Dictionary.encode(w);
+            result = result.replaceAll(w, code);
+        }
+        return result;
+    }
+
+    public static List<String> wordsForPattern(Pattern p, String str) {
+        Matcher m = p.matcher(str);
+        List<String> words = new ArrayList<String>();
+        while(m.find()) {
+            words.add(m.group(0));
+        }
+
+        Collections.sort(words, byLength);
+        return words;
     }
 }
