@@ -119,10 +119,12 @@ public class JsonCompressorTest {
     @Test
     public void canWalkAndUnwalkJsonWithSymbols() {
         JsonCompressor jsonCompressor = new JsonCompressor();
-        String json = "{\"a\":\"1>2 Hello;World\"}";
+        String json = "{\"c\":[\"d>>1\",\"e\"],\"a\":\"1>2 Hello;World\"}";
         String walkFormat = jsonCompressor.walkFormat(json);
-        Assert.assertEquals("a>1;>2 Hello;;World", walkFormat);
+        System.err.println("walkFormat: " + walkFormat);
+        Assert.assertEquals("c>*d;>;>1>e^>a>1;>2 Hello;;World", walkFormat);
         String unwalkFormat = jsonCompressor.unwalkFormat(walkFormat);
+        System.err.println("unwalkFormat: " + unwalkFormat);
         Assert.assertEquals(json, unwalkFormat);
     }
 
