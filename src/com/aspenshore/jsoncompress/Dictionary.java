@@ -1,3 +1,6 @@
+import java.util.HashMap;
+import java.util.Map;
+
 class Dictionary {
     private static String[] wordsAndCodes = {
         "A", "THE", "B", "AND", "C", "FOR", "D", "YOU", "E", "NOT",
@@ -169,4 +172,33 @@ class Dictionary {
         "9Z", "FRENCH", "90", "STORAGE", "91", "JAPAN", "92", "DOING", "93", "LOANS",
         "94", "SHOES", "95", "ENTRY", "96", "STAY", "97", "NATURE", "98", "ORDERS", "99", "AVAILABILITY"
     };
+    private static Map<String,String> wordsToCodes = new HashMap<String,String>();
+    private static Map<String,String> codesToWords = new HashMap<String,String>();
+
+    static {
+        for (int i = 0; i < wordsAndCodes.length / 2; i++) {
+            String word = wordsAndCodes[i];
+            String code = wordsAndCodes[i + 1];
+            wordsToCodes.put(word, code);
+            codesToWords.put(code, word);
+        }
+    }
+
+    public static String encode(String word) {
+        if (wordsToCodes.containsKey(word)) {
+            return "<" + wordsToCodes.get(word);
+        }
+        return word;
+    }
+
+    public static String decode(String code1) {
+        if (!code1.startsWith("<")) {
+            return code1;
+        }
+        String code = code1.substring(1, code1.length());
+        if (codesToWords.containsKey(code)) {
+            return codesToWords.get(code);
+        }
+        return code1;
+    }
 }
