@@ -1,7 +1,30 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class JsonCompressor {
+
+    public byte[] compressJson(String json) {
+        int options = 0;
+        String walkFormat = walkFormat(json);
+        byte[] compress = compress(walkFormat.getBytes());
+        byte[] bytesWithOptions = new byte[compress.length + 1];
+        bytesWithOptions[0] = (byte)options;
+        System.arraycopy(compress, 0, bytesWithOptions, 1, compress.length);
+        return bytesWithOptions;
+    }
+
+    public String expandJson(byte[] bytesWithOptions) {
+        int options = bytesWithOptions[0];
+        byte[] bytes = new byte[bytesWithOptions.length - 1];
+        System.arraycopy(bytesWithOptions, 1, bytes, 0, bytesWithOptions.length - 1);
+        String expandedString;
+        expandedString = new String(expand(bytes));
+        return unwalkFormat(expandedString);
+    }
 
     public byte[] expand(byte[] sourceBytes) {
         byte[] resultBytes = new byte[sourceBytes.length * 8 / 7];
@@ -67,85 +90,146 @@ public class JsonCompressor {
         }
         return resultBytes;
     }
-}
+    
+    public String walkFormat(String json) {
+        String s = json.trim();
+        StringBuilder sb = new StringBuilder();
+        char[] chars = s.toCharArray();
+        boolean inString = false;
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            if (c == '"') {
+                inString = !inString;
+                continue;
+            }
+            if ((c == ' ') && !inString) {
+                continue;
+            }
+            if ((c == '\n') && !inString) {
+                continue;
+            }
+            if ((c == '}') && !inString) {
+                sb.append('^');
+                continue;
+            }
+            if ((c == ']') && !inString) {
+                sb.append('^');
+                continue;
+            }
+            if ((c == '{') && !inString) {
+                sb.append('+');
+                continue;
+            }
+            if ((c == '[') && !inString) {
+                sb.append('*');
+                continue;
+            }
+            if ((c == ',') && !inString) {
+                sb.append('>');
+                continue;
+            }
+            if ((c == ':') && !inString) {
+                sb.append('>');
+                continue;
+            }
+            sb.append(c);
+        }
+        String s1 = sb.toString();
+        if (s1.startsWith("+")) {
+            s1 = s1.substring(1, s1.length());
+        }
+        while (s1.endsWith("^")) {
+            s1 = s1.substring(0, s1.length() - 1);
+        }
+        s1=s1.replaceAll("\\>\\+", "+");
+        s1=s1.replaceAll("\\>\\*", "*");
+        s1=s1.replaceAll("\\^\\>", "^");
+        s1=s1.replaceAll("\\^\\+", "^");
+        return s1;
+    }
 
-class BitString {
-    byte[] bytes;
-    int len;
-    
-    BitString(byte[] b) {
-        this(b, 8 * b.length);
-    }
-    
-    BitString(byte[] b, int len) {
-        bytes = b;
-        this.len = len;
-    }
-    
-    int length() {
-        return len;
+    String aWalk;
+    int pos = 0;
+    public String unwalkFormat(String walk) {
+        aWalk = walk;
+        if (!aWalk.startsWith("*")) {
+            aWalk = "+" + aWalk + "^";
+        }
+        pos = 0;
+        Object jsonObject = null;
+        try {
+            jsonObject = readWalk();
+        } catch (JSONException e) {
+            throw new RuntimeException("Can't parse walk", e);
+        }
+        return jsonObject.toString();
     }
 
-    int last7Bits() {
-        int valStartsAtIndex = (len / 8) - 1;
-        int val = 0;
-        if ((valStartsAtIndex + 1) * 8 < len) {
-            // 2 bytes
-            val = (bytes[valStartsAtIndex] << 8) + (0xff & bytes[valStartsAtIndex + 1]);
-            int shift = len - 8 * (len / 8);
-            val = (val >> (8 - shift));
-        } else {
-            // only in last byte
-            val = bytes[valStartsAtIndex];
-            if ((len / 8) * 8 != len) {
-                int shift = len - 8 * (len / 8);
-                val = (val >> (8 - shift));
+    public Object readWalk() throws JSONException {
+        char c = aWalk.charAt(pos);
+        if (c == '+') {
+            pos++;
+            return readMap();
+        }
+        if (c == '*') {
+            pos++;
+            return readArray();
+        }
+        return readString();
+    }
+
+    public JSONObject readMap() throws JSONException {
+        char c = aWalk.charAt(pos);
+        JSONObject result = new JSONObject();
+        while ((pos < aWalk.length()) && (c != '^')) {
+            String key = readString();
+            c = aWalk.charAt(++pos);
+            if (c == '>') {
+                pos++;
+            }
+            Object value = readWalk();
+            result.put(key, value);
+            if (pos == aWalk.length() - 1) {
+                break;
+            }
+            c = aWalk.charAt(++pos);
+            if (c == '>') {
+                pos++;
             }
         }
-        return val & (0x7f);
+        return result;
     }
 
-    void removeLastByte() {
-        len = len - 8;
-        if (len < 0) {
-            len = 0;
-        }
-    }
-
-    void removeLast7Bits() {
-        len = len - 7;
-        if (len < 0) {
-            len = 0;
-        }
-    }
-
-    long valueOf() {
-        int val = 0;
-        int lastComplete = (len / 8);
-        for (int i = 0; i < lastComplete; i++) {
-            val = val << 8;
-            val = val + bytes[i];
-        }
-        if (lastComplete * 8 != len) {
-            int diff = len - ((len / 8) * 8);
-            val = val << diff;
-            int extra = ((0xff & bytes[lastComplete]) >> (8 - diff));
-            val = val + extra;
-        }
-        return val;
-    }
-
-    public String toString() {
-        String result = "";
-        int lastComplete = (len / 8);
-        for (int i = 0; i < lastComplete; i++) {
-            result = result + "," + (0xff & bytes[i]);
-        }
-        if (lastComplete * 8 != len) {
-            int diff = len - ((len / 8) * 8);
-            int extra = ((0xff & bytes[lastComplete]) >> (8 - diff));
-            result = result + "," + (0xff & extra);
+    public JSONArray readArray() throws JSONException {
+        char c = aWalk.charAt(pos);
+        JSONArray result = new JSONArray();
+        while ((pos < aWalk.length()) && (c != '^')) {
+            Object value = readWalk();
+            result.put(value);
+            if (pos == aWalk.length() - 1) {
+                break;
+            }
+            c = aWalk.charAt(++pos);
+            if (c == '>') {
+                pos++;
+            }
         }
         return result;
+    }
+
+    public String readString() {
+        StringBuilder sb = new StringBuilder();
+        char c = aWalk.charAt(pos);
+        int start = pos;
+        while ((c != '^') && (c != '>') && (c != '+') && (c != '*')) {
+            sb.append(c);
+            if (pos == aWalk.length() - 1) {
+                pos++;
+                break;
+            }
+            c = aWalk.charAt(++pos);
+        }
+        pos--;
+        return sb.toString();
     }
 }
