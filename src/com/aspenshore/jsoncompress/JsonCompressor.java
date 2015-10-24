@@ -9,6 +9,23 @@ public class JsonCompressor {
     private static String escapeChar = ";";
     private final static int ESCAPED_UPPERCASE = 0x01;
 
+    public void incrementEach(byte[] bytes, int inc) {
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] += inc;
+        }
+    }
+
+    public byte[] expand6AndInc(byte[] sourceBytes) {
+        byte[] expanded = expand6(sourceBytes);
+        incrementEach(expanded, 32);
+        return expanded;
+    }
+
+    public byte[] compress6AndDec(byte[] sourceBytes) {
+        incrementEach(sourceBytes, -32);
+        return compress6(sourceBytes);
+    }
+
     public byte[] expand6(byte[] sourceBytes) {
         byte[] resultBytes = new byte[sourceBytes.length * 8 / 6];
         int offset = 0;
@@ -30,8 +47,8 @@ public class JsonCompressor {
                 int firstByteNo = offset / 8;
                 int secondByteNo = firstByteNo + 1;
                 int into = offset - ((offset / 8) * 8);
-                byte firstByte = (byte)(0x3f & ((0xff & sourceBytes[firstByteNo]) << (into - 1)));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (9 - into)));
+                byte firstByte = (byte)(0x3f & ((0xff & sourceBytes[firstByteNo]) << (into - 2)));
+                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (10 - into)));
                 resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
             }
             offset = offset + 6;
@@ -73,16 +90,12 @@ public class JsonCompressor {
                 int byteNo = offset / 8;
                 int into = offset - ((offset / 8) * 8);
                 resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 2))));
-                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (9 - into))));
+                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (10 - into))));
             }
             offset = offset + 6;
         }
         return resultBytes;
     }
-
-    private static String toBinary(int sourceByte) {
-        return String.format("%8s", Integer.toBinaryString(sourceByte & 0xFF)).replace(' ', '0');
-    }    
 
     public byte[] compressJson(String json) {
         int options = 0;

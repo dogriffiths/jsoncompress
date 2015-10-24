@@ -92,6 +92,28 @@ public class JsonCompressorTest {
         dump(expanded, 8);
     }
 
+    //@Test
+    public void compress6AndExpand6Correctly() {
+        //        byte[] bytes = new byte[]{0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x50};
+        byte[] bytes = new byte[]{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34};
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] compressed = jsonCompressor.compress6(bytes);
+        //        Assert.assertEquals(9, compressed.length);
+        byte[] expanded = jsonCompressor.expand6(compressed);
+        dump(bytes, 8);
+        dump(compressed, 6);
+        dump(expanded, 8);
+    }
+
+    @Test
+    public void canCompress6TextAndBack() {
+        String s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;-=+";
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        byte[] compressed = jsonCompressor.compress6AndDec(s.getBytes());
+        byte[] expanded = jsonCompressor.expand6AndInc(compressed);
+        Assert.assertEquals(s, new String(expanded));
+    }
+
     @Test
     public void canCompressTextAndBack() {
         String s = "abcdefghijklThis is a really long, long sentence that I am writing. Will it work? I can only really tell by running the test";
@@ -195,6 +217,7 @@ public class JsonCompressorTest {
     }
 
     private static void dump(byte[] array, int sectionLength) {
+        System.err.println("");
         String bits = bits(array);
         while(bits.length() > 0) {
             if (sectionLength == 8) {
