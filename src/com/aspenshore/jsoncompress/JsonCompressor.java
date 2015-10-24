@@ -21,17 +21,26 @@ public class JsonCompressor {
                 int firstByteNo = offset / 8;
                 int secondByteNo = firstByteNo + 1;
                 int into = offset - ((offset / 8) * 8);
-                byte firstByte = (byte)(0xff & ((0xff & sourceBytes[firstByteNo]) >> into));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (8 - into)));
-                resultBytes[i] = (byte)(0xff & ((firstByte << (into - 1)) | secondByte));
+                byte firstByte = (byte)(0x7f & ((0xff & sourceBytes[firstByteNo]) << (into - 1)));
+                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[secondByteNo]) >> (9 - into)));
+                resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
             }
             offset = offset + 7;
+        }
+        if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
+            byte[] trimmed = new byte[resultBytes.length - 1];
+            System.arraycopy(resultBytes, 0, trimmed, 0, trimmed.length);
+            resultBytes = trimmed;
         }
         return resultBytes;
     }
 
     public byte[] compress(byte[] sourceBytes) {
-        byte[] resultBytes = new byte[sourceBytes.length * 7 / 8];
+        int resultLength = sourceBytes.length * 7 / 8;
+        if (resultLength * 8 < sourceBytes.length * 7) {
+            resultLength++;
+        }
+        byte[] resultBytes = new byte[resultLength];
         int offset = 0;
         for (int i = 0; i < resultBytes.length; i++) {
             resultBytes[i] = 0;
@@ -52,72 +61,12 @@ public class JsonCompressor {
                 int byteNo = offset / 8;
                 int into = offset - ((offset / 8) * 8);
                 resultBytes[byteNo] = (byte)(0xff & (resultBytes[byteNo] | (importantBits >> (into - 1))));
-                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (8 - into))));
+                resultBytes[byteNo + 1] = (byte)(0xff & ((importantBits << (9 - into))));
             }
             offset = offset + 7;
         }
         return resultBytes;
     }
-
-    public byte[] compress2(byte[] sourceBytes) {
-        String input = "";
-        for (byte sourceByte : sourceBytes) {
-            input = toBinary(sourceByte).substring(1,8) + input;
-        }
-        List<Byte> results = new ArrayList<Byte>();
-        while(input.length() > 0) {
-            int len = input.length();
-            //            System.err.println("input.length() = " + input.length());
-            int start = len - 8;
-            if (start < 0) {
-                start = 0;
-            }
-            String sevenBits = input.substring(start, len);
-            input = input.substring(0, start);
-            //System.err.println("now input.length() = " + input.length());
-            Integer integer = Integer.valueOf(sevenBits, 2);
-            byte b = (byte)(integer & 0xff);
-            results.add(b);
-        }
-        byte[] finalResult = new byte[results.size()];
-        for (int i = 0; i < finalResult.length; i++) {
-            finalResult[i] = results.get(i);
-        }
-        return finalResult;
-    }
-
-    public byte[] expand2(byte[] sourceBytes) {
-        String input = "";
-        for (byte sourceByte : sourceBytes) {
-            input = toBinary(sourceByte) + input;
-        }
-        List<Byte> results = new ArrayList<Byte>();
-        while(input.length() > 0) {
-            int len = input.length();
-            int start = len - 7;
-            if (start >= 0) {
-                String sevenBits = input.substring(start, len);
-                input = input.substring(0, start);
-                Integer integer = Integer.valueOf(sevenBits, 2);
-                byte b = (byte)(integer & 0xff);
-                results.add(b);
-            } else {
-                break;
-            }
-        }
-        if (results.get(results.size() - 1) == 0) {
-            results.remove(results.size() - 1);
-        }
-        byte[] finalResult = new byte[results.size()];
-        for (int i = 0; i < finalResult.length; i++) {
-            finalResult[i] = results.get(i);
-        }
-        return finalResult;
-    }
-
-    private String toBinary(byte sourceByte) {
-        return String.format("%8s", Integer.toBinaryString(sourceByte & 0xFF)).replace(' ', '0');
-    }    
 }
 
 class BitString {
@@ -142,22 +91,14 @@ class BitString {
         int val = 0;
         if ((valStartsAtIndex + 1) * 8 < len) {
             // 2 bytes
-            //            System.err.println("2 bytes");
             val = (bytes[valStartsAtIndex] << 8) + (0xff & bytes[valStartsAtIndex + 1]);
-            //System.err.println("val = " + val);
             int shift = len - 8 * (len / 8);
-            //System.err.println("shift = " + shift);
             val = (val >> (8 - shift));
-            //System.err.println("val now = " + val);
         } else {
             // only in last byte
-            //System.err.println("1 byte");
-            //System.err.println("valStartsAtIndex = " + valStartsAtIndex);
             val = bytes[valStartsAtIndex];
-            //System.err.println("val = " + val);
             if ((len / 8) * 8 != len) {
                 int shift = len - 8 * (len / 8);
-                //System.err.println("shift = " + shift);
                 val = (val >> (8 - shift));
             }
         }
