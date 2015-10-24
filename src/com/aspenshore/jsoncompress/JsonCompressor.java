@@ -202,6 +202,10 @@ public class JsonCompressor {
                 sb.append(";>");
                 continue;
             }
+            if ((c == '+') && inString) {
+                sb.append(";+");
+                continue;
+            }
             if ((c == ';') && inString) {
                 sb.append(";;");
                 continue;
@@ -245,10 +249,6 @@ public class JsonCompressor {
         while (s1.endsWith("^")) {
             s1 = s1.substring(0, s1.length() - 1);
         }
-        //        s1=s1.replaceAll("\\>\\+", "+");
-        //s1=s1.replaceAll("\\>\\*", "*");
-        //s1=s1.replaceAll("\\^\\>", "^");
-        //s1=s1.replaceAll("\\^\\+", "^");
         return s1;
     }
 
@@ -266,7 +266,8 @@ public class JsonCompressor {
         } catch (JSONException e) {
             throw new RuntimeException("Can't parse walk", e);
         }
-        return jsonObject.toString().replaceAll(";>", ">");
+        System.err.println("jsonObject: " + jsonObject);
+        return jsonObject.toString();
     }
 
     Object readWalk() throws JSONException {
