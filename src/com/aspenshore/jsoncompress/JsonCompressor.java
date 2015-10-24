@@ -100,7 +100,16 @@ public class JsonCompressor {
     public byte[] compressJson(String json) {
         int options = 0;
         String walkFormat = walkFormat(json);
-        byte[] compress = compress(walkFormat.getBytes());
+        byte[] compress;
+        String tickedString = walkFormat.replaceAll("([A-Z])", escapeChar + "$1");
+        byte[] compressEscapedCase = compress6AndDec(tickedString.toUpperCase().getBytes());
+        byte[] compressUnescapedCase = compress(walkFormat.getBytes());
+        if (compressEscapedCase.length < compressUnescapedCase.length) {
+            compress = compressEscapedCase;
+            options = options | ESCAPED_UPPERCASE;
+        } else {
+            compress = compressUnescapedCase;
+        }
         byte[] bytesWithOptions = new byte[compress.length + 1];
         bytesWithOptions[0] = (byte)options;
         System.arraycopy(compress, 0, bytesWithOptions, 1, compress.length);
@@ -112,7 +121,15 @@ public class JsonCompressor {
         byte[] bytes = new byte[bytesWithOptions.length - 1];
         System.arraycopy(bytesWithOptions, 1, bytes, 0, bytesWithOptions.length - 1);
         String expandedString;
-        expandedString = new String(expand(bytes));
+        if ((options & ESCAPED_UPPERCASE) != 0) {
+            expandedString = new String(expand6AndInc(bytes));
+            expandedString = expandedString.toLowerCase();
+            for (char a : "abcdefghijklmnopqrstuvwxyz".toCharArray()) {
+                expandedString = expandedString.replaceAll(escapeChar + a, ("" + a).toUpperCase());
+            }
+        } else {
+            expandedString = new String(expand(bytes));
+        }
         return unwalkFormat(expandedString);
     }
 
