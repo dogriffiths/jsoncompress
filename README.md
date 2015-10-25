@@ -17,13 +17,13 @@ Create a `JsonCompressor` object, then pass strings to its `compressJson` method
         "}\n";
     byte[] compressedBytes = compressor.compressJson(s);
 
-To expand the data, just called the `expandJson` method:
+To expand the data, just call the `expandJson` method:
 
     String expanded = compressor.expandJson(compressedBytes);
 
 # Description
 
-For very small strings, normal compression algorithms start to fail. Strings shorter than 150-200 bytes might have actually increase in size if run through GZip or Zip compression. 
+For very small strings, normal compression algorithms start to fail. Strings shorter than 150-200 bytes might actually increase in size if run through GZip or Zip compression. 
 
 `JsonCompress` was created to increase the amount of data that could be stored on NFC tags. NFC storage is so small that traditional compression methods can't be used effectively.
 
@@ -33,20 +33,20 @@ Many NFC tags come with just 144 bytes of storage. Typically, some of this space
 - The AAR record -- if you want the tag to launch a custom Android app (about 40 bytes)
 - Other record headers (around 6 bytes)
 
-This means that you typically have under 100 bytes of storage available. This means that many developers have to switched to a custom, binary format. Unfortunately, this fixes the data schema in the code, which reduces flexibility.
+This means that you typically have under 100 bytes of storage available. This means that many developers have to switch to a custom, binary format. Unfortunately, this fixes the data schema in the code, which reduces flexibility.
 
 By using compressed JSON, you can get similar storage capacities to custom binary formats, plus the schema is defined in the data itself. This allows you to create a heterogeneous set of tags which have data relevant to a context.
 
 Plus, JSON is typically far easier to deal with in code, than other formats.
 
-# Compression compared to other methods
+# Compression benchmarks
 
-The main way of compressing small strings is to use the `Smaz` library. `Smaz` is a more general-purpose string compression library, but it can also deal with JSON strings. Here is a comparison of the compression ratios of `Smaz` and `JsonCompress` using the string-benchmarks from the Smaz repo, wrapped in simple JSON strings.
+The `Smaz` library is commonly used to compress small strings. Here is a comparison of the compression ratios of `Smaz` and `JsonCompress` using the string-benchmarks from the Smaz repo, wrapped in simple JSON strings.
 
 Larger values are better. Negative values mean that the compressor actually increased the size.
 
 | String                                                                                      | Smaz | JsonCompress |
-|---------------------------------------------------------------------------------------------+------+--------------|
+| ------------------------------------------------------------------------------------------- | ---- | ------------ |
 | '{"t":"This is a small string"}'                                                            |  28% |          47% |
 | '{"t":"foobar"}'                                                                            |   0% |          50% |
 | '{"t":"the end"}'                                                                           |  12% |          54% |
@@ -100,3 +100,7 @@ In this example, non-prototype compression would shrink the original 209 byte JS
 *Note:* If you compress data using a prototype, then the `JsonCompressor` that expands it must be using the *same* prototype.
 
 Under some circumstances, the prototype will not improve compression. If this happens, `JsonCompress` will silently fall back to ordinary, non-prototype compression.
+
+# Further reading
+
+There is a [blog](http://www.blackpepper.co.uk/theres-plenty-of-room-at-the-bottom-nfc/ "Blog") which provides further information on how an early version of `JsonCompress` was created.
