@@ -1,6 +1,7 @@
 package com.aspenshore.jsoncompress;
 
 import java.math.BigInteger;
+import java.util.zip.*;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -289,6 +290,49 @@ public class JsonCompressorTest {
         assertWalkValid(jsonCompressor, "{\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}},\"a1\":{\"d\":\"4\"}}", "a>1>a0>+b>2>b1>+c>3^^>a1>+d>4", "{\"a1\":{\"d\":\"4\"},\"a\":\"1\",\"a0\":{\"b\":\"2\",\"b1\":{\"c\":\"3\"}}}");
     }
 
+    @Test
+    public void canADictionaryHelp() {
+        String prototype = "{\n"+
+            "   \"type\":\"record\",\n"+
+            "   \"location\":\"somewhere\",\n"+
+            "   \"filename\":\"bill.mp3\",\n"+
+            "   \"sample_rate\":\"8000\",\n"+
+            "   \"encoding_rate\":\"3000\",\n"+
+            "   \"audio_type\":\"mp3\",\n"+
+            "   \"stereo\":\"true\"\n"+
+            "}\n";
+        String s1 = "{\n"+
+            "   \"type\":\"record\",\n"+
+            "   \"location\":\"in the boardroom\",\n"+
+            "   \"filename\":\"fred.aac\",\n"+
+            "   \"sample_rate\":\"48000\",\n"+
+            "   \"encoding_rate\":\"320000\",\n"+
+            "   \"audio_type\":\"aac\",\n"+
+            "   \"stereo\":\"false\"\n"+
+            "}\n";
+        String s = normalizeJson(s1);
+        JsonCompressor compressorWithPrototype = new JsonCompressor(prototype);
+        JsonCompressor compressor = new JsonCompressor();
+        byte[] compress = compressor.compressJson(s);
+        byte[] compressWithPrototype = compressorWithPrototype.compressJson(s);
+        Assert.assertEquals(152, s.length());
+        Assert.assertEquals(79, compress.length);
+        Assert.assertEquals(62, compressWithPrototype.length);
+        String result = compressor.expandJson(compress);
+        Assert.assertEquals(s, normalizeJson(result));
+        String resultWithPrototype = compressorWithPrototype.expandJson(compressWithPrototype);
+        Assert.assertEquals(normalizeJson(s), normalizeJson(resultWithPrototype));
+    }
+
+    private String compact(String s) {
+        String json = normalizeJson(s);
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String walkFormat = jsonCompressor.walkFormat(json);
+        byte[] compress;
+        String tickedString = walkFormat.replaceAll("([A-Z])", ";" + "$1");
+        String upperTickedString = tickedString.toUpperCase();
+        return Dictionary.shorten(upperTickedString);
+    }
 
     //
     // UTILITIES

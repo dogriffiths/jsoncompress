@@ -2,6 +2,7 @@ package com.aspenshore.jsoncompress;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.*;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -10,6 +11,15 @@ import org.json.JSONObject;
 public class JsonCompressor {
     private static String escapeChar = ";";
     private final static int ESCAPED_UPPERCASE = 0x01;
+    private final static int USE_PROTOTYPE = 0x04;
+    private String prototype;
+
+    public JsonCompressor() {
+    }
+
+    public JsonCompressor(String prototype) {
+        this.prototype = prototype;
+    }
 
     public byte[] compressJson(String json) {
         int options = 0;
@@ -20,7 +30,15 @@ public class JsonCompressor {
         upperTickedString = Dictionary.shorten(upperTickedString);
         byte[] compressEscapedCase = compress6AndDec(upperTickedString.getBytes());
         byte[] compressUnescapedCase = compress(walkFormat.getBytes());
-        if (compressEscapedCase.length < compressUnescapedCase.length) {
+        byte[] deflated = null;
+        if (prototype != null) {
+            deflated = deflateWithPrototype(json);
+        }
+        if ((deflated != null) && (deflated.length < compressEscapedCase.length)) {
+            compress = deflated;
+            options = options | ESCAPED_UPPERCASE;
+            options = options | USE_PROTOTYPE;
+        } else if (compressEscapedCase.length < compressUnescapedCase.length) {
             compress = compressEscapedCase;
             options = options | ESCAPED_UPPERCASE;
         } else {
@@ -32,13 +50,66 @@ public class JsonCompressor {
         return bytesWithOptions;
     }
 
+    private byte[] deflateWithPrototype(String s) {
+        String prototypeCompact = compact(prototype);
+        String sCompact = compact(s);
+        byte[] output = new byte[100];
+        Deflater compresser = new Deflater();
+        compresser.setDictionary(prototypeCompact.getBytes());
+        compresser.setInput(sCompact.getBytes());
+        compresser.finish();
+        int compressedDataLength = compresser.deflate(output);
+        compresser.end();
+        byte[] result = new byte[compressedDataLength];
+        System.arraycopy(output, 0, result, 0, compressedDataLength);
+        return result;
+    }
+
+    private String inflateWithPrototype(byte[] deflated) {
+        String prototypeCompact = compact(prototype);
+        Inflater inflater = new Inflater();
+        inflater.setInput(deflated, 0, deflated.length);
+        byte[] result = new byte[400];
+        int resultLength = 0;
+        try {
+            resultLength = inflater.inflate(result);
+            inflater.setDictionary(prototypeCompact.getBytes());
+            resultLength += inflater.inflate(result);
+        } catch(DataFormatException dfe) {
+            throw new RuntimeException("Unable to expand from prototype", dfe);
+        }
+        inflater.end();
+        return new String(result, 0, resultLength);
+    }
+
+    private String compact(String s) {
+        String json = normalizeJson(s);
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String walkFormat = jsonCompressor.walkFormat(json);
+        byte[] compress;
+        String tickedString = walkFormat.replaceAll("([A-Z])", ";" + "$1");
+        String upperTickedString = tickedString.toUpperCase();
+        return Dictionary.shorten(upperTickedString);
+    }
+
+    private String normalizeJson(String s) {
+        return (new JSONObject(s)).toString();
+    }
+
     public String expandJson(byte[] bytesWithOptions) {
         int options = bytesWithOptions[0];
         byte[] bytes = new byte[bytesWithOptions.length - 1];
         System.arraycopy(bytesWithOptions, 1, bytes, 0, bytesWithOptions.length - 1);
         String expandedString;
         if ((options & ESCAPED_UPPERCASE) != 0) {
-            expandedString = new String(expand6AndInc(bytes));
+            if ((options & USE_PROTOTYPE) != 0) {
+                if (prototype == null) {
+                    throw new RuntimeException("Unable to expand. Do not have the prototype.");
+                }
+                expandedString = inflateWithPrototype(bytes);
+            } else {
+                expandedString = new String(expand6AndInc(bytes));
+            }
             expandedString = Dictionary.lengthen(expandedString);
             expandedString = expandedString.toLowerCase();
             for (char a : "abcdefghijklmnopqrstuvwxyz".toCharArray()) {
