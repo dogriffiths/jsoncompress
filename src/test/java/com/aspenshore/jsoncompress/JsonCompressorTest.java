@@ -125,10 +125,10 @@ public class JsonCompressorTest {
         String walkFormat = jsonCompressor.walkFormat(json);
         Assert.assertEquals("c>*d;>;>1>e;^>f^>a>1;>2 Hello;;;+World;;Test;+Here;*With;*;+A;*Set;+Of", walkFormat);
         String unwalkFormat = jsonCompressor.unwalkFormat(walkFormat);
-        Assert.assertEquals(json, unwalkFormat);
+        Assert.assertEquals(normalizeJson(json), normalizeJson(unwalkFormat));
         byte[] compressed = jsonCompressor.compressJson(json);
         String expanded = jsonCompressor.expandJson(compressed);
-        Assert.assertEquals(json, expanded);
+        Assert.assertEquals(normalizeJson(json), normalizeJson(expanded));
     }
 
     @Test
@@ -291,7 +291,7 @@ public class JsonCompressorTest {
     }
 
     @Test
-    public void canADictionaryHelp() {
+    public void checkADictionaryHelp() {
         String prototype = "{\n"+
             "   \"type\":\"record\",\n"+
             "   \"location\":\"somewhere\",\n"+
@@ -321,7 +321,7 @@ public class JsonCompressorTest {
         byte[] compressWithPrototype = compressorWithPrototype.compressJson(s);
         Assert.assertEquals(209, s.length());
         Assert.assertEquals(108, compress.length);
-        Assert.assertEquals(76, compressWithPrototype.length);
+        Assert.assertEquals(75, compressWithPrototype.length);
         String result = compressor.expandJson(compress);
         Assert.assertEquals(s, normalizeJson(result));
         String resultWithPrototype = compressorWithPrototype.expandJson(compressWithPrototype);
