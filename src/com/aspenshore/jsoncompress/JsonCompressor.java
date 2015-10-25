@@ -12,13 +12,15 @@ public class JsonCompressor {
     private static String escapeChar = ";";
     private final static int ESCAPED_UPPERCASE = 0x01;
     private final static int USE_PROTOTYPE = 0x04;
-    private String prototype;
+    private String prototypeCompact;
 
     public JsonCompressor() {
     }
 
     public JsonCompressor(String prototype) {
-        this.prototype = prototype;
+        if (prototype != null) {
+             prototypeCompact = compact(prototype);
+        }
     }
 
     public byte[] compressJson(String json) {
@@ -31,7 +33,7 @@ public class JsonCompressor {
         byte[] compressEscapedCase = compress6AndDec(upperTickedString.getBytes());
         byte[] compressUnescapedCase = compress(walkFormat.getBytes());
         byte[] deflated = null;
-        if (prototype != null) {
+        if (prototypeCompact != null) {
             deflated = deflateWithPrototype(json);
         }
         if ((deflated != null) && (deflated.length < compressEscapedCase.length)) {
@@ -50,52 +52,6 @@ public class JsonCompressor {
         return bytesWithOptions;
     }
 
-    private byte[] deflateWithPrototype(String s) {
-        String prototypeCompact = compact(prototype);
-        String sCompact = compact(s);
-        byte[] output = new byte[100];
-        Deflater compresser = new Deflater();
-        compresser.setDictionary(prototypeCompact.getBytes());
-        compresser.setInput(sCompact.getBytes());
-        compresser.finish();
-        int compressedDataLength = compresser.deflate(output);
-        compresser.end();
-        byte[] result = new byte[compressedDataLength];
-        System.arraycopy(output, 0, result, 0, compressedDataLength);
-        return result;
-    }
-
-    private String inflateWithPrototype(byte[] deflated) {
-        String prototypeCompact = compact(prototype);
-        Inflater inflater = new Inflater();
-        inflater.setInput(deflated, 0, deflated.length);
-        byte[] result = new byte[400];
-        int resultLength = 0;
-        try {
-            resultLength = inflater.inflate(result);
-            inflater.setDictionary(prototypeCompact.getBytes());
-            resultLength += inflater.inflate(result);
-        } catch(DataFormatException dfe) {
-            throw new RuntimeException("Unable to expand from prototype", dfe);
-        }
-        inflater.end();
-        return new String(result, 0, resultLength);
-    }
-
-    private String compact(String s) {
-        String json = normalizeJson(s);
-        JsonCompressor jsonCompressor = new JsonCompressor();
-        String walkFormat = jsonCompressor.walkFormat(json);
-        byte[] compress;
-        String tickedString = walkFormat.replaceAll("([A-Z])", ";" + "$1");
-        String upperTickedString = tickedString.toUpperCase();
-        return Dictionary.shorten(upperTickedString);
-    }
-
-    private String normalizeJson(String s) {
-        return (new JSONObject(s)).toString();
-    }
-
     public String expandJson(byte[] bytesWithOptions) {
         int options = bytesWithOptions[0];
         byte[] bytes = new byte[bytesWithOptions.length - 1];
@@ -103,7 +59,7 @@ public class JsonCompressor {
         String expandedString;
         if ((options & ESCAPED_UPPERCASE) != 0) {
             if ((options & USE_PROTOTYPE) != 0) {
-                if (prototype == null) {
+                if (prototypeCompact == null) {
                     throw new RuntimeException("Unable to expand. Do not have the prototype.");
                 }
                 expandedString = inflateWithPrototype(bytes);
@@ -258,6 +214,53 @@ public class JsonCompressor {
         return resultBytes;
     }
     
+    byte[] deflateWithPrototype(String s) {
+        String sCompact = compact(s);
+        byte[] output = new byte[100];
+        Deflater compresser = new Deflater();
+        compresser.setDictionary(prototypeCompact.getBytes());
+        compresser.setInput(sCompact.getBytes());
+        compresser.finish();
+        int compressedDataLength = compresser.deflate(output);
+        compresser.end();
+        byte[] result = new byte[compressedDataLength];
+        System.arraycopy(output, 0, result, 0, compressedDataLength);
+        return result;
+    }
+
+    String inflateWithPrototype(byte[] deflated) {
+        Inflater inflater = new Inflater();
+        inflater.setInput(deflated, 0, deflated.length);
+        byte[] result = new byte[400];
+        int resultLength = 0;
+        try {
+            inflater.inflate(result);
+            inflater.setDictionary(prototypeCompact.getBytes());
+            resultLength = inflater.inflate(result);
+            if (resultLength == result.length) {
+                throw new RuntimeException("Unable to expand. Too little space");
+            }
+        } catch(DataFormatException dfe) {
+            throw new RuntimeException("Unable to expand from prototype", dfe);
+        }
+        inflater.end();
+        return new String(result, 0, resultLength);
+    }
+
+    private String compact(String s) {
+        String json = normalizeJson(s);
+        JsonCompressor jsonCompressor = new JsonCompressor();
+        String walkFormat = jsonCompressor.walkFormat(json);
+        byte[] compress;
+        String tickedString = walkFormat.replaceAll("([A-Z])", ";" + "$1");
+        String upperTickedString = tickedString.toUpperCase();
+        return Dictionary.shorten(upperTickedString);
+    }
+
+    private String normalizeJson(String s) {
+        return (new JSONObject(s)).toString();
+    }
+
     String walkFormat(String json) {
         String s = json.trim();
         StringBuilder sb = new StringBuilder();
