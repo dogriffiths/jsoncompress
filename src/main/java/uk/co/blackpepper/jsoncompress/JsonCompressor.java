@@ -1,4 +1,4 @@
-package com.aspenshore.jsoncompress;
+package uk.co.blackpepper.jsoncompress;
 
 import java.util.ArrayList;
 import java.util.List;
