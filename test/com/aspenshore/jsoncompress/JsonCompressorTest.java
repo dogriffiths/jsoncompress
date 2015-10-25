@@ -299,6 +299,8 @@ public class JsonCompressorTest {
             "   \"sample_rate\":\"8000\",\n"+
             "   \"encoding_rate\":\"3000\",\n"+
             "   \"audio_type\":\"mp3\",\n"+
+            "   \"use_video\":\"true\",\n"+
+            "   \"schedule\":[\"09:00\",\"12:00\"],\n"+
             "   \"stereo\":\"true\"\n"+
             "}\n";
         String s1 = "{\n"+
@@ -308,6 +310,8 @@ public class JsonCompressorTest {
             "   \"sample_rate\":\"48000\",\n"+
             "   \"encoding_rate\":\"320000\",\n"+
             "   \"audio_type\":\"aac\",\n"+
+            "   \"use_video\":\"false\",\n"+
+            "   \"schedule\":[\"11:00\",\"14:00\",\"18:00\"],\n"+
             "   \"stereo\":\"false\"\n"+
             "}\n";
         String s = normalizeJson(s1);
@@ -315,9 +319,9 @@ public class JsonCompressorTest {
         JsonCompressor compressor = new JsonCompressor();
         byte[] compress = compressor.compressJson(s);
         byte[] compressWithPrototype = compressorWithPrototype.compressJson(s);
-        Assert.assertEquals(152, s.length());
-        Assert.assertEquals(79, compress.length);
-        Assert.assertEquals(62, compressWithPrototype.length);
+        Assert.assertEquals(209, s.length());
+        Assert.assertEquals(108, compress.length);
+        Assert.assertEquals(76, compressWithPrototype.length);
         String result = compressor.expandJson(compress);
         Assert.assertEquals(s, normalizeJson(result));
         String resultWithPrototype = compressorWithPrototype.expandJson(compressWithPrototype);
