@@ -1,15 +1,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>uk.co.blackpepper.jsoncompress</groupId>
+  <groupId>uk.co.blackpepper</groupId>
   <artifactId>jsoncompress</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
-  <name>Compression library for short JSON strings</name>
+  <version>1.0</version>
+  <name>${project.groupId}:${project.artifactId}</name>
   <url>https://github.com/dogriffiths/jsoncompress</url>
   <description>This library was created to allow JSON data to be
-    stored in constricted memory. For example, on NFC chips which
-    typically have 137 bytes of free space.</description>
+  stored in constricted memory. For example, on NFC chips which
+  typically have 137 bytes of free space.</description>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>David Griffiths</name>
+      <email>david.griffiths@blackpepper.co.uk</email>
+      <organization>Black Pepper Software</organization>
+      <organizationUrl>http://www.blackpepper.co.uk</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:dogriffiths/jsoncompress.git</connection>
+    <developerConnection>scm:git:git@github.com:dogriffiths/jsoncompress.git</developerConnection>
+    <url>git@github.com:dogriffiths/jsoncompress.git</url>
+  </scm>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
