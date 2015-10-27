@@ -109,7 +109,7 @@ public class JsonCompressor {
         byte[] compressUnescapedCase = compress(walkFormat.getBytes());
         byte[] deflated = null;
         if (prototypeCompact != null) {
-            deflated = deflateWithPrototype(json);
+            deflated = deflateWithPrototype(upperTickedString);
         }
         if ((deflated != null) && (deflated.length < compressEscapedCase.length)) {
             compress = deflated;
@@ -299,8 +299,7 @@ public class JsonCompressor {
         return resultBytes;
     }
     
-    byte[] deflateWithPrototype(String s) {
-        String sCompact = compact(s);
+    byte[] deflateWithPrototype(String sCompact) {
         byte[] output = new byte[100];
         Deflater compresser = new Deflater();
         compresser.setDictionary(prototypeCompact.getBytes());
@@ -334,8 +333,7 @@ public class JsonCompressor {
 
     private String compact(String s) {
         String json = normalizeJson(s);
-        JsonCompressor jsonCompressor = new JsonCompressor();
-        String walkFormat = jsonCompressor.walkFormat(json);
+        String walkFormat = walkFormat(json);
         byte[] compress;
         String tickedString = walkFormat.replaceAll("([A-Z])", ";" + "$1");
         String upperTickedString = tickedString.toUpperCase();
