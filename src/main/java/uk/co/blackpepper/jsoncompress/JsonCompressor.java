@@ -106,7 +106,7 @@ public class JsonCompressor {
         String upperTickedString = tickedString.toUpperCase();
         upperTickedString = Dictionary.shorten(upperTickedString);
         byte[] compressEscapedCase = compress6AndDec(upperTickedString.getBytes());
-        byte[] compressUnescapedCase = compress(walkFormat.getBytes());
+        byte[] compressUnescapedCase = pack(walkFormat.getBytes(), 7);
         byte[] deflated = null;
         if (prototypeCompact != null) {
             deflated = deflateWithPrototype(upperTickedString);
@@ -157,7 +157,7 @@ public class JsonCompressor {
                 expandedString = expandedString.replaceAll(escapeChar + a, ("" + a).toUpperCase());
             }
         } else {
-            expandedString = new String(expand(bytes));
+            expandedString = new String(unpack(bytes, 7));
         }
         return unwalkFormat(expandedString);
     }
@@ -169,136 +169,87 @@ public class JsonCompressor {
     }
 
     byte[] expand6AndInc(byte[] sourceBytes) {
-        byte[] expanded = expand6(sourceBytes);
+        byte[] expanded = unpack(sourceBytes, 6);
         incrementEach(expanded, 32);
         return expanded;
     }
 
     byte[] compress6AndDec(byte[] sourceBytes) {
         incrementEach(sourceBytes, -32);
-        return compress6(sourceBytes);
+        return pack(sourceBytes, 6);
     }
 
-    byte[] expand(byte[] sourceBytes) {
-        byte[] resultBytes = new byte[sourceBytes.length * 8 / 7];
+    byte[] unpack(byte[] sourceBytes, int bits) {
+        byte[] resultBytes = new byte[sourceBytes.length * 8 / bits];
         int offset = 0;
+        int mask = 0;
+        if (bits == 6) {
+            mask = 0x3f;
+        } else if (bits == 7) {
+            mask = 0x7f;
+        } else {
+            throw new RuntimeException("Can only unpack 6 or 7 bits");
+        }
+        int indent = 8 - bits;
         for (int i = 0; i < resultBytes.length; i++) {
             int into = offset & 0x7;
             int byteNo = offset >> 3;
             int source = 0xff & sourceBytes[byteNo];
             if (into == 0) {
                 // We're starting on a byte boundary
-                resultBytes[i] = (byte)(source >> 1);
+                resultBytes[i] = (byte)(source >> indent);
             }
-            else if (into == 1) {
-                // We're 1 position into a byte boundary
-                resultBytes[i] = (byte)(0x7f & source);
+            else if (into <= indent) {
+                // We're completely inside a byte boundary
+                resultBytes[i] = (byte)(mask & source);
             } else {
                 // We're crossing a byte boundary
-                byte firstByte = (byte)(0x7f & (source << (into - 1)));
-                byte secondByte = (byte)((0xff & sourceBytes[byteNo + 1]) >> (9 - into));
+                byte firstByte = (byte)(mask & (source << (into - indent)));
+                byte secondByte = (byte)((0xff & sourceBytes[byteNo + 1]) >> (16 - bits - into));
                 resultBytes[i] = (byte)(firstByte | secondByte);
             }
-            offset += 7;
+            offset += bits;
         }
         if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
             byte[] trimmed = new byte[resultBytes.length - 1];
             System.arraycopy(resultBytes, 0, trimmed, 0, trimmed.length);
             resultBytes = trimmed;
-        }
-        return resultBytes;
-    }
-
-    byte[] compress(byte[] sourceBytes) {
-        int resultLength = sourceBytes.length * 7 / 8;
-        if (resultLength * 8 < sourceBytes.length * 7) {
-            resultLength++;
-        }
-        byte[] resultBytes = new byte[resultLength];
-        int offset = 0;
-        for (int i = 0; i < resultBytes.length; i++) {
-            resultBytes[i] = 0;
-        }
-        for (int i = 0; i < sourceBytes.length; i++) {
-            int into = offset & 0x7;
-            byte importantBits = (byte)(0xff & sourceBytes[i]);
-            int byteNo = offset / 8;
-            if (into == 0) {
-                // We're starting on a byte boundary
-                resultBytes[byteNo] = (byte)(importantBits << 1);
-            }
-            else if (into == 1) {
-                // We're 1 position into a byte boundary
-                resultBytes[byteNo] |= importantBits;
-            } else {
-                // We're crossing a byte boundary
-                resultBytes[byteNo] |= importantBits >> (into - 1);
-                resultBytes[byteNo + 1] = (byte)((importantBits << (9 - into)));
-            }
-            offset = offset + 7;
-        }
-        return resultBytes;
-    }
-
-    byte[] expand6(byte[] sourceBytes) {
-        byte[] resultBytes = new byte[sourceBytes.length * 8 / 6];
-        int offset = 0;
-        for (int i = 0; i < resultBytes.length; i++) {
-            int byteNo = offset >> 3;
-            int into = offset & 0x7;
-            int source = 0xff & sourceBytes[byteNo];
-            if (into == 0) {
-                // We're starting on a byte boundary
-                resultBytes[i] = (byte)(source >> 2);
-            } else if (into == 2) {
-                // We're 2 positions into a byte boundary
-                resultBytes[i] = (byte)(0x3f & source);
-            } else {
-                // We're crossing a byte boundary
-                byte firstByte = (byte)(0x3f & (source << (into - 2)));
-                byte secondByte = (byte)(0xff & ((0xff & sourceBytes[byteNo + 1]) >> (10 - into)));
-                resultBytes[i] = (byte)(0xff & (firstByte | secondByte));
-            }
-            offset += 6;
-        }
-        if ((resultBytes.length > 0) && (resultBytes[resultBytes.length - 1] == 0)) {
-            byte[] trimmed = new byte[resultBytes.length - 1];
-            System.arraycopy(resultBytes, 0, trimmed, 0, trimmed.length);
-            resultBytes = trimmed;
-        }
-        return resultBytes;
-    }
-
-    byte[] compress6(byte[] sourceBytes) {
-        int resultLength = sourceBytes.length * 6 / 8;
-        if (resultLength * 8 < sourceBytes.length * 6) {
-            resultLength++;
-        }
-        byte[] resultBytes = new byte[resultLength];
-        int offset = 0;
-        for (int i = 0; i < resultBytes.length; i++) {
-            resultBytes[i] = 0;
-        }
-        for (int i = 0; i < sourceBytes.length; i++) {
-            byte source = sourceBytes[i];
-            int into = offset - ((offset / 8) * 8);
-            int byteNo = offset >> 3;
-            if (into == 0) {
-                // We're starting on a byte boundary
-                resultBytes[byteNo] = (byte)(0xff & (source << 2));
-            } else if (into == 2) {
-                // We're 2 positions into a byte boundary
-                resultBytes[byteNo] |= source;
-            } else {
-                // We're crossing a byte boundary
-                resultBytes[byteNo] |= source >> (into - 2);
-                resultBytes[byteNo + 1] = (byte)(0xff & (source << (10 - into)));
-            }
-            offset += 6;
         }
         return resultBytes;
     }
     
+    byte[] pack(byte[] sourceBytes, int bits) {
+        int resultLength = sourceBytes.length * bits / 8;
+        if (resultLength * 8 < sourceBytes.length * bits) {
+            resultLength++;
+        }
+        byte[] resultBytes = new byte[resultLength];
+        int offset = 0;
+        for (int i = 0; i < resultBytes.length; i++) {
+            resultBytes[i] = 0;
+        }
+        int indent = 8 - bits;
+        for (int i = 0; i < sourceBytes.length; i++) {
+            byte source = sourceBytes[i];
+            int into = offset & 0x7;
+            int byteNo = offset >> 3;
+            if (into == 0) {
+                // We're starting on a byte boundary
+                resultBytes[byteNo] = (byte)(0xff & (source << indent));
+            }
+            else if (into <= indent) {
+                // We're completely inside a byte boundary
+                resultBytes[byteNo] |= source;
+            } else {
+                // We're crossing a byte boundary
+                resultBytes[byteNo] |= source >> (into - indent);
+                resultBytes[byteNo + 1] = (byte)(0xff & (source << (16 - bits - into)));
+            }
+            offset = offset + bits;
+        }
+        return resultBytes;
+    }
+
     byte[] deflateWithPrototype(String sCompact) {
         byte[] output = new byte[100];
         Deflater compresser = new Deflater();

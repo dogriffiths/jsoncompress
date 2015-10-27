@@ -17,7 +17,7 @@ public class JsonCompressorTest {
     public void canExpand6SixBytes() {
         byte[] bytes = new byte[]{-1, -1, -1, -1, -1, -1};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] expanded = jsonCompressor.expand6(bytes);
+        byte[] expanded = jsonCompressor.unpack(bytes, 6);
         Assert.assertEquals(8, expanded.length);
         Assert.assertEquals(0x3f, expanded[0] & 0xff);
         Assert.assertEquals(0x3f, expanded[1] & 0xff);
@@ -33,7 +33,7 @@ public class JsonCompressorTest {
     public void canCompressEightBytes() {
         byte[] bytes = new byte[]{0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compress = jsonCompressor.compress(bytes);
+        byte[] compress = jsonCompressor.pack(bytes, 7);
         Assert.assertEquals(7, compress.length);
         Assert.assertEquals(0xff, compress[0] & 0xff);
         Assert.assertEquals(0xff, compress[1] & 0xff);
@@ -48,7 +48,7 @@ public class JsonCompressorTest {
     public void canCompress6EightBytes() {
         byte[] bytes = new byte[]{0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compress = jsonCompressor.compress6(bytes);
+        byte[] compress = jsonCompressor.pack(bytes, 6);
         Assert.assertEquals(6, compress.length);
         Assert.assertEquals(0xff, compress[0] & 0xff);
         Assert.assertEquals(0xff, compress[1] & 0xff);
@@ -62,7 +62,7 @@ public class JsonCompressorTest {
     public void canExpandBytes() {
         byte[] bytes = new byte[]{(byte)(0x81 & 0xff), 0};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] expanded = jsonCompressor.expand(bytes);
+        byte[] expanded = jsonCompressor.unpack(bytes, 7);
         Assert.assertEquals(0x40, expanded[0] & 0xff);
         Assert.assertEquals(0x40, expanded[1] & 0xff);
     }
@@ -71,7 +71,7 @@ public class JsonCompressorTest {
     public void canExpandSevenBytes() {
         byte[] bytes = new byte[]{-1, -1, -1, -1, -1, -1, -1};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] expanded = jsonCompressor.expand(bytes);
+        byte[] expanded = jsonCompressor.unpack(bytes, 7);
         Assert.assertEquals(8, expanded.length);
         Assert.assertEquals(0x7f, expanded[0] & 0xff);
         Assert.assertEquals(0x7f, expanded[1] & 0xff);
@@ -88,9 +88,9 @@ public class JsonCompressorTest {
         //        byte[] bytes = new byte[]{0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69};
         byte[] bytes = new byte[]{0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compressed = jsonCompressor.compress(bytes);
+        byte[] compressed = jsonCompressor.pack(bytes, 7);
         Assert.assertEquals(9, compressed.length);
-        byte[] expanded = jsonCompressor.expand(compressed);
+        byte[] expanded = jsonCompressor.unpack(compressed, 7);
         dump(bytes, 8);
         dump(compressed, 7);
         dump(expanded, 8);
@@ -101,9 +101,8 @@ public class JsonCompressorTest {
         //        byte[] bytes = new byte[]{0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x50};
         byte[] bytes = new byte[]{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34};
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compressed = jsonCompressor.compress6(bytes);
-        //        Assert.assertEquals(9, compressed.length);
-        byte[] expanded = jsonCompressor.expand6(compressed);
+        byte[] compressed = jsonCompressor.pack(bytes, 6);
+        byte[] expanded = jsonCompressor.unpack(compressed, 6);
         dump(bytes, 8);
         dump(compressed, 6);
         dump(expanded, 8);
@@ -149,8 +148,8 @@ public class JsonCompressorTest {
     public void canCompressTextAndBack() {
         String s = "abcdefghijklThis is a really long, long sentence that I am writing. Will it work? I can only really tell by running the test";
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compressed = jsonCompressor.compress(s.getBytes());
-        byte[] expanded = jsonCompressor.expand(compressed);
+        byte[] compressed = jsonCompressor.pack(s.getBytes(), 7);
+        byte[] expanded = jsonCompressor.unpack(compressed, 7);
         Assert.assertEquals(s, new String(expanded));
     }
 
@@ -169,8 +168,8 @@ public class JsonCompressorTest {
     public void bugDontPutZeroesAtTheEnd() {
         JsonCompressor jsonCompressor = new JsonCompressor();
         String walkFormat = "Rcr>6>Times*08:00>12:00>16:00^Ntnt>Daily>Ntvl>3>Title>Gemtuzumab ozogamicin>Info>Take with food";
-        byte[] compress = jsonCompressor.compress(walkFormat.getBytes());
-        byte[] expand = jsonCompressor.expand(compress);
+        byte[] compress = jsonCompressor.pack(walkFormat.getBytes(), 7);
+        byte[] expand = jsonCompressor.unpack(compress, 7);
         Assert.assertEquals(walkFormat, new String(expand));
     }
 
@@ -178,8 +177,8 @@ public class JsonCompressorTest {
     public void canCompressAndExpandAString() {
         String s = "ABCDEFGHI";
         JsonCompressor jsonCompressor = new JsonCompressor();
-        byte[] compress = jsonCompressor.compress(s.getBytes());
-        byte[] expand = jsonCompressor.expand(compress);
+        byte[] compress = jsonCompressor.pack(s.getBytes(), 7);
+        byte[] expand = jsonCompressor.unpack(compress, 7);
         String result = new String(expand);
         Assert.assertEquals(s, result);
     }
@@ -210,8 +209,8 @@ public class JsonCompressorTest {
                     data[data.length - 1] = (byte)(0x7f & val);
                 }
             }
-            byte[] compressed = jsonCompressor.compress(data);
-            byte[] expanded = jsonCompressor.expand(compressed);
+            byte[] compressed = jsonCompressor.pack(data, 7);
+            byte[] expanded = jsonCompressor.unpack(compressed, 7);
             for (int i = 0; i < data.length; i++) {
                 try {
                     Assert.assertEquals("Failed at position " + i, data[i], expanded[i]);
@@ -240,8 +239,8 @@ public class JsonCompressorTest {
                     data[data.length - 1] = (byte)(0x7f & val);
                 }
             }
-            byte[] compressed = jsonCompressor.compress6(data);
-            byte[] expanded = jsonCompressor.expand6(compressed);
+            byte[] compressed = jsonCompressor.pack(data, 6);
+            byte[] expanded = jsonCompressor.unpack(compressed, 6);
             for (int i = 0; i < data.length; i++) {
                 try {
                     Assert.assertEquals("Failed at position " + i, data[i], expanded[i]);
