@@ -103,4 +103,4 @@ Under some circumstances, the prototype will not improve compression. If this ha
 
 # Further reading
 
-There is a [blog](http://www.blackpepper.co.uk/theres-plenty-of-room-at-the-bottom-nfc/ "Blog") which provides further information on how an early version of `JsonCompress` was created.
+There is a [blog](https://www.blackpepper.co.uk/what-we-think/blog/theres-plenty-of-room-at-the-bottom-nfc "Blog") which provides further information on how an early version of `JsonCompress` was created.
